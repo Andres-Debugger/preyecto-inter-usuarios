@@ -1,39 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-
-function FadeIn({ children, className = "", delay = 0 }: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={`transition-all duration-1000 ease-out ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      } ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
-  );
-}
+import FadeIn from "@/components/FadeIn";
 
 export default function About() {
   return (
@@ -59,7 +27,7 @@ export default function About() {
           </FadeIn>
 
           <FadeIn delay={200} className="flex flex-col gap-7 pt-0 md:pt-8">
-            <p className="text-[15px] leading-[1.8]" style={{ color: "var(--color-text)" }}>
+            <p className="leading-[1.8]" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-text)" }}>
               At Brillo &amp; Co, we believe that jewelry is more than just an
               accessory, it&apos;s a timeless expression of elegance and a
               connection to life&apos;s most treasured moments. With a legacy
@@ -67,21 +35,21 @@ export default function About() {
               exceptional craftsmanship and sophistication.
             </p>
 
-            <p className="text-[13px] leading-[1.9]" style={{ color: "var(--color-muted)" }}>
+            <p className="leading-[1.9]" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-muted)" }}>
               We carefully select the finest materials—precious metals,
               sparkling gemstones, and luminous pearls—to create each piece with
               precision and passion. Our skilled artisans ensure that every item
               is not only beautiful but built to last.
             </p>
 
-            <p className="text-[13px] leading-[1.9]" style={{ color: "var(--color-muted)" }}>
+            <p className="leading-[1.9]" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-muted)" }}>
               Our commitment to excellence is reflected in every detail, from the
               design process to the final product. At Brillo &amp; Co, we are dedicated
               to creating jewelry that transcends trends and becomes a cherished
               heirloom for generations.
             </p>
 
-            <p className="text-[13px] leading-[1.9]" style={{ color: "var(--color-muted)" }}>
+            <p className="leading-[1.9]" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-muted)" }}>
               Whether you&apos;re celebrating love, marking a special occasion, or
               simply treating yourself, we invite you to explore our collections
               and experience the celestial elegance that defines us.

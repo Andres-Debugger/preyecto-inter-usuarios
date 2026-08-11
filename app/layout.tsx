@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PaletteProvider } from "@/context/PaletteContext";
+import { TypographyProvider } from "@/context/TypographyContext";
+import { ToastProvider } from "@/components/Toast";
 import PaletteStyles from "@/components/PaletteStyles";
 
 export const metadata: Metadata = {
@@ -15,11 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className="min-h-screen">
         <PaletteProvider>
-          <PaletteStyles />
-          {children}
+          <TypographyProvider>
+            <ToastProvider>
+              <PaletteStyles />
+              {children}
+            </ToastProvider>
+          </TypographyProvider>
         </PaletteProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ export interface Palette {
   id: string;
   name: string;
   colors: [string, string, string, string, string];
+  mode: "light" | "dark";
   createdAt: number;
 }
 
@@ -14,7 +15,7 @@ interface PaletteContextType {
   activePalette: Palette;
   previewPalette: Palette | null;
   setPreviewPalette: (p: Palette | null) => void;
-  savePalette: (name: string, colors: [string, string, string, string, string]) => void;
+  savePalette: (name: string, colors: [string, string, string, string, string], mode?: "light" | "dark") => void;
   deletePalette: (id: string) => void;
   activatePalette: (id: string) => void;
   searchPalettes: (query: string) => Palette[];
@@ -24,6 +25,7 @@ const DEFAULT_PALETTE: Palette = {
   id: "default",
   name: "Brillo & Co Default",
   colors: ["#F5F0E8", "#1C1917", "#B8956A", "#E8E2D8", "#78716C"],
+  mode: "light",
   createdAt: Date.now(),
 };
 
@@ -89,11 +91,12 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activePalette, loaded]);
 
-  const savePalette = useCallback((name: string, colors: [string, string, string, string, string]) => {
+  const savePalette = useCallback((name: string, colors: [string, string, string, string, string], mode: "light" | "dark" = "light") => {
     const newPalette: Palette = {
       id: `palette-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name,
       colors,
+      mode,
       createdAt: Date.now(),
     };
     setPalettes((prev) => [newPalette, ...prev]);

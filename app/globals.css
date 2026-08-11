@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap");
-
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -14,7 +12,12 @@
   body {
     background-color: var(--color-bg, #F5F0E8);
     color: var(--color-text, #2A2522);
-    @apply font-sans;
+    font-family: var(--font-body, "Inter", system-ui, sans-serif);
+    font-size: var(--size-paragraph, 14px);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-title, "Playfair Display", serif);
   }
 
   ::selection {
@@ -25,7 +28,9 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center gap-3 px-8 py-3.5 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    @apply inline-flex items-center gap-3 px-8 py-3.5 font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    font-size: var(--size-paragraph, 11px);
+    font-family: var(--font-body, "Inter", sans-serif);
     background-color: var(--color-text, #2A2522);
     color: var(--color-bg, #F0EBE1);
   }
@@ -34,7 +39,9 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center gap-3 px-8 py-3.5 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    @apply inline-flex items-center gap-3 px-8 py-3.5 font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    font-size: var(--size-paragraph, 11px);
+    font-family: var(--font-body, "Inter", sans-serif);
     border-color: var(--color-text, #2A2522);
     color: var(--color-text, #2A2522);
     background: transparent;
@@ -45,12 +52,18 @@
   }
 
   .section-title-editorial {
-    @apply font-serif text-[clamp(4rem,10vw,9rem)] leading-[0.82] tracking-[-0.02em] font-bold;
+    font-family: var(--font-title, "Playfair Display", serif);
+    font-size: clamp(4rem, 10vw, 9rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    font-weight: 700;
     color: color-mix(in srgb, var(--color-text, #2A2522) 15%, transparent);
   }
 
   .category-link {
-    @apply inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-300 hover:gap-5;
+    @apply inline-flex items-center gap-3 font-medium tracking-[0.2em] uppercase transition-all duration-300 hover:gap-5;
+    font-size: var(--size-paragraph, 11px);
+    font-family: var(--font-body, "Inter", sans-serif);
   }
 
   .product-card {
@@ -77,7 +90,12 @@
   }
 
   .product-name {
-    @apply text-[11px] font-serif font-medium tracking-[0.12em] uppercase leading-tight;
+    font-family: var(--font-title, "Playfair Display", serif);
+    font-size: var(--size-subtitle, 14px);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
     color: var(--color-text, #2A2522);
   }
 }
@@ -86,6 +104,14 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
 }
 
 /* Dark mode overrides — handled by PaletteStyles */

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 100);
@@ -23,13 +25,20 @@ export default function Header() {
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && menuOpen) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [menuOpen]);
+
   const navItems = [
     { label: "Home", href: "/" },
     { label: "Rings", href: "/rings" },
     { label: "Earrings", href: "/earrings" },
     { label: "Necklaces", href: "/necklaces" },
     { label: "Bracelets", href: "/bracelets" },
-    // { label: "Collections", href: "/#collections" },
     { label: "About", href: "/#about" },
     { label: "Settings", href: "/settings" },
   ];
@@ -50,9 +59,10 @@ export default function Header() {
         <div className="flex items-center justify-between px-6 md:px-10 py-5">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase transition-colors duration-300 hover:opacity-70"
-            style={{ color: textColor }}
-            aria-label="Menu"
+            className="flex items-center gap-3 font-medium tracking-[0.2em] uppercase transition-colors duration-300 hover:opacity-70"
+            style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: textColor }}
+            aria-label={menuOpen ? "Cerrar menu" : "Abrir menu"}
+            aria-expanded={menuOpen}
           >
             {menuOpen ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -75,14 +85,14 @@ export default function Header() {
             {!menuOpen && (
               <>
                 <ThemeToggle />
-                <button className="transition-colors duration-300 hover:opacity-70" style={{ color: textColor }} aria-label="Cart">
+                <button className="transition-colors duration-300 hover:opacity-70" style={{ color: textColor }} aria-label="Carrito">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <path d="M16 10a4 4 0 0 1-8 0" />
                   </svg>
                 </button>
-                <button className="transition-colors duration-300 hover:opacity-70" style={{ color: textColor }} aria-label="Account">
+                <button className="transition-colors duration-300 hover:opacity-70" style={{ color: textColor }} aria-label="Cuenta">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
@@ -103,22 +113,30 @@ export default function Header() {
           opacity: menuOpen ? 1 : 0,
           pointerEvents: menuOpen ? "auto" : "none",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu de navegacion"
       >
         <div className="flex flex-col items-center justify-center h-full gap-8">
-          {navItems.map((item, i) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-2xl md:text-3xl font-serif tracking-[0.15em] transition-all duration-300 hover:opacity-60"
-              style={{
-                color: "var(--color-text)",
-                transitionDelay: menuOpen ? `${i * 60}ms` : "0ms",
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item, i) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="tracking-[0.15em] transition-all duration-300 hover:opacity-60"
+                style={{
+                  fontFamily: "var(--font-title)",
+                  fontSize: "var(--size-title)",
+                  color: isActive ? "var(--color-accent)" : "var(--color-text)",
+                  transitionDelay: menuOpen ? `${i * 60}ms` : "0ms",
+                }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </>
