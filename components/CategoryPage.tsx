@@ -1,0 +1,99 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
+function FadeIn({ children, className = "", delay = 0 }: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-1000 ease-out ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  image: string;
+}
+
+interface CategoryPageProps {
+  title: string;
+  subtitle: string;
+  heroImage: string;
+  products: Product[];
+}
+
+export default function CategoryPage({ title, subtitle, heroImage, products }: CategoryPageProps) {
+  return (
+    <>
+      <Header />
+      <main style={{ backgroundColor: "var(--color-bg)" }}>
+        {/* Hero */}
+        <section className="relative h-[60vh] md:h-[70vh] flex items-end">
+          <div className="absolute inset-0">
+            <Image src={heroImage} alt={title} fill className="object-cover object-center" priority sizes="100vw" />
+            <div className="absolute inset-0 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, var(--color-bg), transparent)` }} />
+          </div>
+          <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 pb-12 md:pb-16 w-full">
+            <FadeIn>
+              <p className="text-[11px] tracking-[0.25em] uppercase mb-3" style={{ color: "var(--color-muted)" }}>{subtitle}</p>
+              <h1 className="font-serif text-[clamp(3rem,6vw,5rem)] leading-[0.9]" style={{ color: "var(--color-text)" }}>{title}</h1>
+            </FadeIn>
+          </div>
+        </section>
+
+        {/* Products grid */}
+        <section className="py-16 md:py-24">
+          <div className="max-w-7xl mx-auto px-8 md:px-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-8">
+              {products.map((product, i) => (
+                <FadeIn key={product.id} delay={i * 80}>
+                  <div className="product-card group">
+                    <div className="product-card-image aspect-square relative overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
+                      <Image src={product.image} alt={product.name} fill className="object-cover object-center transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />
+                    </div>
+                    <div className="pt-4 pb-2">
+                      <h3 className="product-name mb-1">{product.name}</h3>
+                      <p className="text-[11px] mb-1.5 font-sans" style={{ color: "var(--color-muted)" }}>{product.description}</p>
+                      <p className="text-[13px] font-medium font-sans" style={{ color: "var(--color-text)" }}>{product.price}</p>
+                    </div>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
+}

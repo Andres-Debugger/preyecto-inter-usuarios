@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap");
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg, #F5F0E8);
+    color: var(--color-text, #2A2522);
+    @apply font-sans;
+  }
+
+  ::selection {
+    background-color: var(--color-accent, #C9B696);
+    color: var(--color-text, #2A2522);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-3 px-8 py-3.5 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    background-color: var(--color-text, #2A2522);
+    color: var(--color-bg, #F0EBE1);
+  }
+  .btn-primary:hover {
+    opacity: 0.85;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-3 px-8 py-3.5 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-500;
+    border-color: var(--color-text, #2A2522);
+    color: var(--color-text, #2A2522);
+    background: transparent;
+  }
+  .btn-outline:hover {
+    background-color: var(--color-text, #2A2522);
+    color: var(--color-bg, #F0EBE1);
+  }
+
+  .section-title-editorial {
+    @apply font-serif text-[clamp(4rem,10vw,9rem)] leading-[0.82] tracking-[-0.02em] font-bold;
+    color: color-mix(in srgb, var(--color-text, #2A2522) 15%, transparent);
+  }
+
+  .category-link {
+    @apply inline-flex items-center gap-3 text-[11px] font-medium tracking-[0.2em] uppercase transition-all duration-300 hover:gap-5;
+  }
+
+  .product-card {
+    @apply cursor-pointer;
+  }
+
+  .product-card-image {
+    @apply relative overflow-hidden;
+    background-color: var(--color-surface, #EDE8DF);
+  }
+
+  .product-card-image::after {
+    content: "";
+    @apply absolute inset-0 transition-all duration-500;
+    background-color: transparent;
+  }
+
+  .product-card:hover .product-card-image::after {
+    background-color: color-mix(in srgb, var(--color-text, #2A2522) 5%, transparent);
+  }
+
+  .product-card:hover .product-card-image img {
+    @apply scale-105;
+  }
+
+  .product-name {
+    @apply text-[11px] font-serif font-medium tracking-[0.12em] uppercase leading-tight;
+    color: var(--color-text, #2A2522);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Dark mode overrides — handled by PaletteStyles */
