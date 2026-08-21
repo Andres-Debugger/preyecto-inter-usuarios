@@ -1,8 +1,26 @@
 "use client";
 
 import FadeIn from "@/components/FadeIn";
+import { useTypography } from "@/context/TypographyContext";
+
+const DEFAULT_TITLE_SIZE = 48;
+const DEFAULT_SUBTITLE_SIZE = 18;
 
 export default function Hero() {
+  const { config } = useTypography();
+
+  const titleSize = config.titleSize !== DEFAULT_TITLE_SIZE
+    ? `${config.titleSize}px`
+    : "clamp(4rem, 14vw, 12rem)";
+
+  const yearSize = config.titleSize !== DEFAULT_TITLE_SIZE
+    ? `${Math.round(config.titleSize * 0.7)}px`
+    : "clamp(3rem, 6vw, 5.5rem)";
+
+  const taglineSize = config.subtitleSize !== DEFAULT_SUBTITLE_SIZE
+    ? `${config.subtitleSize}px`
+    : "clamp(1rem, 2vw, 1.6rem)";
+
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Background */}
@@ -21,7 +39,7 @@ export default function Hero() {
         <FadeIn>
           <h1
             className="leading-[0.85] tracking-[0.02em] text-white/90 text-center select-none drop-shadow-[0_2px_20px_rgba(0,0,0,0.15)]"
-            style={{ fontFamily: "var(--font-title)", fontSize: "clamp(4rem, 14vw, 12rem)" }}
+            style={{ fontFamily: "var(--font-title)", fontSize: titleSize }}
           >
             B<span className="relative inline-block">R<span className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>ILLO &amp; C<span className="relative inline-block">O<span className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>
           </h1>
@@ -39,7 +57,7 @@ export default function Hero() {
               </p>
               <h2
                 className="leading-[0.85] tracking-tight mb-6"
-                style={{ fontFamily: "var(--font-title)", fontSize: "clamp(3rem, 6vw, 5.5rem)", color: "var(--color-text)" }}
+                style={{ fontFamily: "var(--font-title)", fontSize: yearSize, color: "var(--color-text)" }}
               >
                 2025
               </h2>
@@ -61,7 +79,7 @@ export default function Hero() {
             <FadeIn delay={400} className="text-right hidden md:block">
               <p
                 className="leading-snug tracking-wide mb-8"
-                style={{ fontFamily: "var(--font-title)", fontSize: "clamp(1rem, 2vw, 1.6rem)", color: "var(--color-text)" }}
+                style={{ fontFamily: "var(--font-title)", fontSize: taglineSize, color: "var(--color-text)" }}
               >
                 UN TOQUE DE ELEGANCIA<br />PARA MOMENTOS ATemporales
               </p>

@@ -14,11 +14,18 @@ interface PaletteContextType {
   palettes: Palette[];
   activePalette: Palette;
   previewPalette: Palette | null;
+  draftPalette: { colors: [string, string, string, string, string]; mode: "light" | "dark" } | null;
   setPreviewPalette: (p: Palette | null) => void;
   savePalette: (name: string, colors: [string, string, string, string, string], mode?: "light" | "dark") => void;
+  updatePalette: (id: string, name: string, colors: [string, string, string, string, string], mode: "light" | "dark") => void;
   deletePalette: (id: string) => void;
   activatePalette: (id: string) => void;
   searchPalettes: (query: string) => Palette[];
+  updateDraftColors: (colors: [string, string, string, string, string]) => void;
+  updateDraftMode: (mode: "light" | "dark") => void;
+  applyDraft: () => void;
+  resetDraft: () => void;
+  hasDraft: boolean;
 }
 
 const DEFAULT_PALETTE: Palette = {
@@ -70,6 +77,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   const [palettes, setPalettes] = useState<Palette[]>([DEFAULT_PALETTE]);
   const [activePalette, setActivePalette] = useState<Palette>(DEFAULT_PALETTE);
   const [previewPalette, setPreviewPalette] = useState<Palette | null>(null);
+  const [draftPalette, setDraftPalette] = useState<{ colors: [string, string, string, string, string]; mode: "light" | "dark" } | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -102,6 +110,11 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
     setPalettes((prev) => [newPalette, ...prev]);
   }, []);
 
+  const updatePalette = useCallback((id: string, name: string, colors: [string, string, string, string, string], mode: "light" | "dark") => {
+    setPalettes((prev) => prev.map((p) => (p.id === id ? { ...p, name, colors, mode } : p)));
+    setActivePalette((prev) => (prev.id === id ? { ...prev, name, colors, mode } : prev));
+  }, []);
+
   const deletePalette = useCallback((id: string) => {
     if (id === "default") return;
     setPalettes((prev) => {
@@ -113,7 +126,11 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
 
   const activatePalette = useCallback((id: string) => {
     const found = palettes.find((p) => p.id === id);
-    if (found) setActivePalette(found);
+    if (found) {
+      setActivePalette(found);
+      setPreviewPalette(null);
+      setDraftPalette(null);
+    }
   }, [palettes]);
 
   const searchPalettes = useCallback((query: string): Palette[] => {
@@ -121,6 +138,33 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
     const lower = query.toLowerCase();
     return palettes.filter((p) => p.name.toLowerCase().includes(lower));
   }, [palettes]);
+
+  const updateDraftColors = useCallback((colors: [string, string, string, string, string]) => {
+    setDraftPalette((prev) => ({
+      colors,
+      mode: prev?.mode || activePalette.mode,
+    }));
+  }, [activePalette.mode]);
+
+  const updateDraftMode = useCallback((mode: "light" | "dark") => {
+    setDraftPalette((prev) => ({
+      colors: prev?.colors || activePalette.colors,
+      mode,
+    }));
+  }, [activePalette]);
+
+  const applyDraft = useCallback(() => {
+    setDraftPalette((prev) => {
+      if (prev) {
+        setActivePalette((current) => ({ ...current, colors: prev.colors, mode: prev.mode }));
+      }
+      return null;
+    });
+  }, []);
+
+  const resetDraft = useCallback(() => {
+    setDraftPalette(null);
+  }, []);
 
   if (!loaded) return null;
 
@@ -130,11 +174,18 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
         palettes,
         activePalette,
         previewPalette,
+        draftPalette,
         setPreviewPalette,
         savePalette,
+        updatePalette,
         deletePalette,
         activatePalette,
         searchPalettes,
+        updateDraftColors,
+        updateDraftMode,
+        applyDraft,
+        resetDraft,
+        hasDraft: draftPalette !== null,
       }}
     >
       {children}

@@ -36,17 +36,33 @@ const PRESET_PALETTES: { name: string; colors: [string, string, string, string, 
   { name: "Halloween", colors: ["#1A1A1A", "#FF6600", "#8B0000", "#2D2D2D", "#FFD700"], mode: "dark" },
 ];
 
-function TypographyConfigurator() {
-  const { config, activePreset, updateTitleFont, updateBodyFont, updateSizes, savePreset } = useTypography();
+function TypographyConfigurator({
+  editingId,
+  setEditingId,
+}: {
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+}) {
+  const {
+    draftConfig,
+    hasDraft,
+    updateDraftFont,
+    updateDraftSizes,
+    applyDraft,
+    resetDraft,
+    activePreset,
+    savePreset,
+    updatePreset,
+  } = useTypography();
   const { addToast } = useToast();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const bodyInputRef = useRef<HTMLInputElement>(null);
-  const [titleName, setTitleName] = useState(config.titleFontName);
-  const [bodyName, setBodyName] = useState(config.bodyFontName);
+  const [titleName, setTitleName] = useState(draftConfig?.titleFontName ?? activePreset.config.titleFontName);
+  const [bodyName, setBodyName] = useState(draftConfig?.bodyFontName ?? activePreset.config.bodyFontName);
   const [sizes, setSizes] = useState({
-    title: config.titleSize,
-    subtitle: config.subtitleSize,
-    paragraph: config.paragraphSize,
+    title: draftConfig?.titleSize ?? activePreset.config.titleSize,
+    subtitle: draftConfig?.subtitleSize ?? activePreset.config.subtitleSize,
+    paragraph: draftConfig?.paragraphSize ?? activePreset.config.paragraphSize,
   });
   const [showSave, setShowSave] = useState(false);
   const [presetName, setPresetName] = useState("");
@@ -66,29 +82,42 @@ function TypographyConfigurator() {
       const base64 = reader.result as string;
       if (type === "title") {
         setTitleName(file.name.replace(".ttf", ""));
-        updateTitleFont(file.name.replace(".ttf", ""), base64);
+        updateDraftFont("title", file.name.replace(".ttf", ""), base64);
         addToast("Title font loaded successfully", "success");
       } else {
         setBodyName(file.name.replace(".ttf", ""));
-        updateBodyFont(file.name.replace(".ttf", ""), base64);
+        updateDraftFont("body", file.name.replace(".ttf", ""), base64);
         addToast("Body font loaded successfully", "success");
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleApplySizes = () => {
-    updateSizes(sizes.title, sizes.subtitle, sizes.paragraph);
-    addToast("Font sizes updated", "success");
+  const handleApplyChanges = () => {
+    updateDraftSizes(sizes.title, sizes.subtitle, sizes.paragraph);
+    applyDraft();
+    addToast("Changes applied successfully", "success");
+  };
+
+  const handleReset = () => {
+    resetDraft();
+    setTitleName(activePreset.config.titleFontName);
+    setBodyName(activePreset.config.bodyFontName);
+    setSizes({
+      title: activePreset.config.titleSize,
+      subtitle: activePreset.config.subtitleSize,
+      paragraph: activePreset.config.paragraphSize,
+    });
+    addToast("Changes discarded", "info");
   };
 
   const handleSave = () => {
     if (!presetName.trim()) return;
     savePreset(presetName.trim(), {
       titleFontName: titleName,
-      titleFontData: config.titleFontData,
+      titleFontData: draftConfig?.titleFontData ?? activePreset.config.titleFontData,
       bodyFontName: bodyName,
-      bodyFontData: config.bodyFontData,
+      bodyFontData: draftConfig?.bodyFontData ?? activePreset.config.bodyFontData,
       titleSize: sizes.title,
       subtitleSize: sizes.subtitle,
       paragraphSize: sizes.paragraph,
@@ -96,6 +125,21 @@ function TypographyConfigurator() {
     setPresetName("");
     setShowSave(false);
     addToast(`Preset "${presetName.trim()}" saved`, "success");
+  };
+
+  const handleSaveEdits = () => {
+    if (!editingId) return;
+    updatePreset(editingId, activePreset.name, {
+      titleFontName: titleName,
+      titleFontData: draftConfig?.titleFontData ?? activePreset.config.titleFontData,
+      bodyFontName: bodyName,
+      bodyFontData: draftConfig?.bodyFontData ?? activePreset.config.bodyFontData,
+      titleSize: sizes.title,
+      subtitleSize: sizes.subtitle,
+      paragraphSize: sizes.paragraph,
+    });
+    setEditingId(null);
+    addToast(`Preset "${activePreset.name}" updated`, "success");
   };
 
   return (
@@ -121,13 +165,44 @@ function TypographyConfigurator() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowSave(!showSave)}
-          className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
-          style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
-        >
-          {showSave ? "Cancel" : "Save as Preset"}
-        </button>
+        <div className="flex items-center gap-2">
+          {hasDraft && (
+            <>
+              <button
+                onClick={handleReset}
+                className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+                style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
+              >
+                Reset
+              </button>
+              <button
+                onClick={handleApplyChanges}
+                className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+                style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+              >
+                Apply Changes
+              </button>
+            </>
+          )}
+          {!editingId && (
+            <button
+              onClick={() => setShowSave(!showSave)}
+              className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+            >
+              {showSave ? "Cancel" : "Save as Preset"}
+            </button>
+          )}
+          {editingId && !hasDraft && (
+            <button
+              onClick={handleSaveEdits}
+              className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+            >
+              Save Edits
+            </button>
+          )}
+        </div>
       </div>
 
       {showSave && (
@@ -293,13 +368,6 @@ function TypographyConfigurator() {
             />
           </div>
         </div>
-
-        <button
-          onClick={handleApplySizes}
-          className="w-full mt-6 btn-primary justify-center"
-        >
-          Apply Changes
-        </button>
       </div>
 
       {/* Live preview */}
@@ -318,7 +386,7 @@ function TypographyConfigurator() {
           <h4
             className="mb-3"
             style={{
-              fontFamily: config.titleFontData ? "'CustomTitle', serif" : "Playfair Display, serif",
+              fontFamily: (draftConfig?.titleFontData ?? activePreset.config.titleFontData) ? "'CustomTitle', serif" : "Playfair Display, serif",
               fontSize: `${sizes.title}px`,
               color: "var(--color-text)",
               lineHeight: 1.2,
@@ -329,7 +397,7 @@ function TypographyConfigurator() {
           <p
             className="mb-3"
             style={{
-              fontFamily: config.bodyFontData ? "'CustomBody', sans-serif" : "Inter, sans-serif",
+              fontFamily: (draftConfig?.bodyFontData ?? activePreset.config.bodyFontData) ? "'CustomBody', sans-serif" : "Inter, sans-serif",
               fontSize: `${sizes.subtitle}px`,
               color: "var(--color-muted)",
             }}
@@ -339,7 +407,7 @@ function TypographyConfigurator() {
           <p
             className="mb-6"
             style={{
-              fontFamily: config.bodyFontData ? "'CustomBody', sans-serif" : "Inter, sans-serif",
+              fontFamily: (draftConfig?.bodyFontData ?? activePreset.config.bodyFontData) ? "'CustomBody', sans-serif" : "Inter, sans-serif",
               fontSize: `${sizes.paragraph}px`,
               color: "var(--color-text)",
               lineHeight: 1.6,
@@ -359,7 +427,7 @@ function TypographyConfigurator() {
   );
 }
 
-function TypographyList() {
+function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
   const { presets, activePreset, activatePreset, deletePreset, searchPresets, previewPreset, setPreviewPreset } = useTypography();
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -475,6 +543,14 @@ function TypographyList() {
                   </button>
                 )}
 
+                <button
+                  onClick={() => onEdit(preset.id)}
+                  className="text-[10px] tracking-wider uppercase px-3 py-1.5 border transition-all duration-200 hover:opacity-80"
+                  style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
+                >
+                  Edit
+                </button>
+
                 {preset.id !== "default" && (
                   <div className="relative">
                     <button
@@ -529,15 +605,29 @@ function TypographyList() {
   );
 }
 
-function PaletteCreator({ onCreated }: { onCreated: () => void }) {
-  const { savePalette } = usePalette();
+function PaletteCreator({
+  editingId,
+  setEditingId,
+}: {
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+}) {
+  const {
+    draftPalette,
+    hasDraft,
+    updateDraftColors,
+    updateDraftMode,
+    applyDraft,
+    resetDraft,
+    savePalette,
+    updatePalette,
+  } = usePalette();
   const { addToast } = useToast();
   const [name, setName] = useState("");
-  const [colors, setColors] = useState<[string, string, string, string, string]>([
-    "#F5F0E8", "#1C1917", "#B8956A", "#E8E2D8", "#78716C",
-  ]);
-  const [mode, setMode] = useState<"light" | "dark">("light");
   const [error, setError] = useState("");
+
+  const colors = draftPalette?.colors ?? ["#F5F0E8", "#1C1917", "#B8956A", "#E8E2D8", "#78716C"] as [string, string, string, string, string];
+  const mode = draftPalette?.mode ?? "light";
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -551,21 +641,42 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
     savePalette(name.trim(), colors, mode);
     setName("");
     setError("");
-    onCreated();
     addToast(`Palette "${name.trim()}" saved`, "success");
   };
 
+  const handleSaveEdits = () => {
+    if (!editingId) return;
+    if (colors.some((c) => !/^#[0-9A-Fa-f]{6}$/.test(c))) {
+      setError("All colors must be valid hex codes");
+      return;
+    }
+    updatePalette(editingId, name || "Untitled Palette", colors, mode);
+    setEditingId(null);
+    setName("");
+    addToast(`Palette "${name || "Untitled Palette"}" updated`, "success");
+  };
+
+  const handleApplyChanges = () => {
+    applyDraft();
+    addToast("Changes applied successfully", "success");
+  };
+
+  const handleReset = () => {
+    resetDraft();
+    addToast("Changes discarded", "info");
+  };
+
   const loadPreset = (preset: typeof PRESET_PALETTES[0]) => {
-    setColors(preset.colors);
+    updateDraftColors(preset.colors);
+    updateDraftMode(preset.mode);
     setName(preset.name);
-    setMode(preset.mode);
     addToast(`Preset "${preset.name}" loaded`, "info");
   };
 
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-muted)]/20 p-6 md:p-8">
       <h3 className="text-lg font-semibold mb-6" style={{ color: "var(--color-text)" }}>
-        Create New Palette
+        {editingId ? "Edit Palette" : "Create New Palette"}
       </h3>
 
       {/* Preset palettes */}
@@ -617,7 +728,7 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
         </label>
         <div className="flex gap-3">
           <button
-            onClick={() => setMode("light")}
+            onClick={() => updateDraftMode("light")}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm border-2 transition-all duration-200"
             style={{
               borderColor: mode === "light" ? "var(--color-accent)" : "var(--color-muted)",
@@ -639,7 +750,7 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
             Light Mode
           </button>
           <button
-            onClick={() => setMode("dark")}
+            onClick={() => updateDraftMode("dark")}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm border-2 transition-all duration-200"
             style={{
               borderColor: mode === "dark" ? "var(--color-accent)" : "var(--color-muted)",
@@ -681,7 +792,7 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
                   onChange={(e) => {
                     const next = [...colors] as [string, string, string, string, string];
                     next[i] = e.target.value;
-                    setColors(next);
+                    updateDraftColors(next);
                   }}
                   className="w-16 h-16 cursor-pointer border-2 border-black/10 rounded-lg"
                 />
@@ -692,7 +803,7 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
                 onChange={(e) => {
                   const next = [...colors] as [string, string, string, string, string];
                   next[i] = e.target.value;
-                  setColors(next);
+                  updateDraftColors(next);
                 }}
                 className="w-24 text-center text-[11px] font-mono px-2 py-1 border bg-transparent outline-none"
                 style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
@@ -706,17 +817,47 @@ function PaletteCreator({ onCreated }: { onCreated: () => void }) {
         <p className="text-red-500 text-xs mb-4">{error}</p>
       )}
 
-      <button
-        onClick={handleSave}
-        className="btn-primary"
-      >
-        Save Palette
-      </button>
+      <div className="flex items-center gap-3">
+        {hasDraft && (
+          <>
+            <button
+              onClick={handleReset}
+              className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
+            >
+              Reset
+            </button>
+            <button
+              onClick={handleApplyChanges}
+              className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
+              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+            >
+              Apply Changes
+            </button>
+          </>
+        )}
+        {!editingId && (
+          <button
+            onClick={handleSave}
+            className="btn-primary"
+          >
+            Save Palette
+          </button>
+        )}
+        {editingId && !hasDraft && (
+          <button
+            onClick={handleSaveEdits}
+            className="btn-primary"
+          >
+            Save Edits
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function PaletteList() {
+function PaletteList({ onEdit }: { onEdit: (id: string) => void }) {
   const { palettes, activePalette, activatePalette, deletePalette, searchPalettes, previewPalette, setPreviewPalette } = usePalette();
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -827,6 +968,14 @@ function PaletteList() {
                   </button>
                 )}
 
+                <button
+                  onClick={() => onEdit(palette.id)}
+                  className="text-[10px] tracking-wider uppercase px-3 py-1.5 border transition-all duration-200 hover:opacity-80"
+                  style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
+                >
+                  Edit
+                </button>
+
                 {palette.id !== "default" && (
                   <div className="relative">
                     <button
@@ -882,9 +1031,9 @@ function PaletteList() {
 }
 
 function LivePreview() {
-  const { previewPalette, activePalette } = usePalette();
-  const { config } = useTypography();
-  const p = previewPalette || activePalette;
+  const { previewPalette, activePalette, draftPalette } = usePalette();
+  const { config, draftConfig } = useTypography();
+  const p = previewPalette || draftPalette || activePalette;
   const [previewDark, setPreviewDark] = useState(false);
 
   const isDark = previewDark || p.mode === "dark";
@@ -895,8 +1044,9 @@ function LivePreview() {
   const surface = isDark ? "#2A2A2A" : p.colors[3];
   const mutedColor = isDark ? "#888888" : p.colors[4];
 
-  const titleFont = config.titleFontData ? "'CustomTitle', serif" : "serif";
-  const bodyFont = config.bodyFontData ? "'CustomBody', sans-serif" : "sans-serif";
+  const titleFont = (draftConfig?.titleFontData ?? config.titleFontData) ? "'CustomTitle', serif" : "serif";
+  const bodyFont = (draftConfig?.bodyFontData ?? config.bodyFontData) ? "'CustomBody', sans-serif" : "sans-serif";
+  const titleSize = draftConfig?.titleSize ?? config.titleSize;
 
   return (
     <div className="border p-6" style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)" }}>
@@ -967,7 +1117,7 @@ function LivePreview() {
             <p style={{ fontFamily: bodyFont, fontSize: "7px", letterSpacing: "0.2em", textTransform: "uppercase" as const, color: mutedColor, marginBottom: "4px" }}>
               Collection
             </p>
-            <p style={{ fontFamily: titleFont, fontSize: `${Math.min(config.titleSize * 0.5, 28)}px`, lineHeight: 1, color: text, marginBottom: "8px" }}>
+            <p style={{ fontFamily: titleFont, fontSize: `${Math.min(titleSize * 0.5, 28)}px`, lineHeight: 1, color: text, marginBottom: "8px" }}>
               2025
             </p>
             <div
@@ -1028,6 +1178,27 @@ function LivePreview() {
 
 export default function SettingsPage() {
   const [, setRefreshKey] = useState(0);
+  const [editingTypographyId, setEditingTypographyId] = useState<string | null>(null);
+  const [editingPaletteId, setEditingPaletteId] = useState<string | null>(null);
+
+  const { presets } = useTypography();
+  const { palettes } = usePalette();
+
+  const handleEditTypography = (id: string) => {
+    setEditingTypographyId(id);
+    const preset = presets.find((p) => p.id === id);
+    if (preset) {
+      setRefreshKey((k) => k + 1);
+    }
+  };
+
+  const handleEditPalette = (id: string) => {
+    setEditingPaletteId(id);
+    const palette = palettes.find((p) => p.id === id);
+    if (palette) {
+      setRefreshKey((k) => k + 1);
+    }
+  };
 
   return (
     <>
@@ -1049,11 +1220,14 @@ export default function SettingsPage() {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                  <TypographyConfigurator />
+                  <TypographyConfigurator
+                    editingId={editingTypographyId}
+                    setEditingId={setEditingTypographyId}
+                  />
                 </div>
                 <div className="lg:col-span-1">
                   <div className="sticky top-24">
-                    <TypographyList />
+                    <TypographyList onEdit={handleEditTypography} />
                   </div>
                 </div>
               </div>
@@ -1066,8 +1240,11 @@ export default function SettingsPage() {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                  <PaletteCreator onCreated={() => setRefreshKey((k) => k + 1)} />
-                  <PaletteList />
+                  <PaletteCreator
+                    editingId={editingPaletteId}
+                    setEditingId={setEditingPaletteId}
+                  />
+                  <PaletteList onEdit={handleEditPalette} />
                 </div>
 
                 <div className="lg:col-span-1">

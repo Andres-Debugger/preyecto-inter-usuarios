@@ -33,8 +33,8 @@ export default function CategoryPage({ title, subtitle, heroImage, products }: C
           </div>
           <div className="relative z-10 max-w-7xl mx-auto px-8 md:px-16 pb-12 md:pb-16 w-full">
             <FadeIn>
-              <p className="text-[11px] tracking-[0.25em] uppercase mb-3" style={{ color: "var(--color-muted)" }}>{subtitle}</p>
-              <h1 className="font-serif text-[clamp(3rem,6vw,5rem)] leading-[0.9]" style={{ color: "var(--color-text)" }}>{title}</h1>
+              <p className="tracking-[0.25em] uppercase mb-3" style={{ fontSize: "var(--size-paragraph)", color: "var(--color-muted)" }}>{subtitle}</p>
+              <h1 className="font-serif leading-[0.9]" style={{ fontSize: "var(--size-title)", color: "var(--color-text)" }}>{title}</h1>
             </FadeIn>
           </div>
         </section>
@@ -51,8 +51,8 @@ export default function CategoryPage({ title, subtitle, heroImage, products }: C
                     </div>
                     <div className="pt-4 pb-2">
                       <h3 className="product-name mb-1">{product.name}</h3>
-                      <p className="text-[11px] mb-1.5 font-sans" style={{ color: "var(--color-muted)" }}>{product.description}</p>
-                      <p className="text-[13px] font-medium font-sans" style={{ color: "var(--color-text)" }}>{product.price}</p>
+                      <p className="mb-1.5 font-sans" style={{ fontSize: "var(--size-paragraph)", color: "var(--color-muted)" }}>{product.description}</p>
+                      <p className="font-medium font-sans" style={{ fontSize: "var(--size-subtitle)", color: "var(--color-text)" }}>{product.price}</p>
                     </div>
                   </div>
                 </FadeIn>

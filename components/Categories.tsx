@@ -58,7 +58,7 @@ export default function Categories() {
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-500" />
                 <div className="absolute top-5 left-5 flex items-center gap-3">
-                  <span className="text-[11px] font-medium tracking-[0.2em] uppercase drop-shadow-sm" style={{ color: "var(--color-text)" }}>
+                  <span className="font-medium tracking-[0.2em] uppercase drop-shadow-sm" style={{ fontSize: "var(--size-paragraph)", color: "var(--color-text)" }}>
                     {category.name}
                   </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "var(--color-text)" }} className="transition-transform duration-300 group-hover:translate-x-1">

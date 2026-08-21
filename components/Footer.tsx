@@ -14,7 +14,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-8 md:px-16 py-16 md:py-20">
         {/* Top: Brand + Social */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-16">
-          <Link href="/" className="text-3xl md:text-4xl tracking-[0.12em] select-none" style={{ fontFamily: "var(--font-title)", color: "var(--color-bg)" }}>
+          <Link href="/" className="tracking-[0.12em] select-none" style={{ fontSize: "var(--size-title)", fontFamily: "var(--font-title)", color: "var(--color-bg)" }}>
             B<span className="relative inline-block">R<span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[8px]">✦</span></span>ILLO &amp; C<span className="relative inline-block">O<span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[8px]">✦</span></span>
           </Link>
           <div className="flex items-center gap-5">
@@ -63,8 +63,8 @@ export default function Footer() {
                 <li key={link}>
                   <a
                     href={`#${link.toLowerCase().replace(/[\s&]+/g, "-")}`}
-                    className="text-xs tracking-[0.15em] uppercase transition-colors duration-300 hover:opacity-70"
-                    style={{ color: "color-mix(in srgb, var(--color-bg) 60%, transparent)" }}
+                    className="tracking-[0.15em] uppercase transition-colors duration-300 hover:opacity-70"
+                    style={{ fontSize: "var(--size-paragraph)", color: "color-mix(in srgb, var(--color-bg) 60%, transparent)" }}
                   >
                     {link}
                   </a>

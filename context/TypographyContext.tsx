@@ -23,15 +23,19 @@ interface TypographyContextType {
   presets: TypographyPreset[];
   activePreset: TypographyPreset;
   previewPreset: TypographyPreset | null;
+  draftConfig: TypographyConfig | null;
   config: TypographyConfig;
   savePreset: (name: string, config: TypographyConfig) => void;
+  updatePreset: (id: string, name: string, config: TypographyConfig) => void;
   deletePreset: (id: string) => void;
   activatePreset: (id: string) => void;
   searchPresets: (query: string) => TypographyPreset[];
   setPreviewPreset: (preset: TypographyPreset | null) => void;
-  updateTitleFont: (name: string, data: string) => void;
-  updateBodyFont: (name: string, data: string) => void;
-  updateSizes: (title: number, subtitle: number, paragraph: number) => void;
+  updateDraftFont: (type: "title" | "body", name: string, data: string) => void;
+  updateDraftSizes: (title: number, subtitle: number, paragraph: number) => void;
+  applyDraft: () => void;
+  resetDraft: () => void;
+  hasDraft: boolean;
 }
 
 const DEFAULT_CONFIG: TypographyConfig = {
@@ -46,7 +50,7 @@ const DEFAULT_CONFIG: TypographyConfig = {
 
 const DEFAULT_PRESET: TypographyPreset = {
   id: "default",
-  name: "Configuración por Defecto",
+  name: "Default",
   config: DEFAULT_CONFIG,
   createdAt: Date.now(),
 };
@@ -85,6 +89,7 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
   const [presets, setPresets] = useState<TypographyPreset[]>([DEFAULT_PRESET]);
   const [activePreset, setActivePreset] = useState<TypographyPreset>(DEFAULT_PRESET);
   const [previewPreset, setPreviewPreset] = useState<TypographyPreset | null>(null);
+  const [draftConfig, setDraftConfig] = useState<TypographyConfig | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -108,14 +113,19 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
 
   const config = previewPreset?.config || activePreset.config;
 
-  const savePreset = useCallback((name: string, config: TypographyConfig) => {
+  const savePreset = useCallback((name: string, cfg: TypographyConfig) => {
     const newPreset: TypographyPreset = {
       id: `typography-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name,
-      config: { ...config },
+      config: { ...cfg },
       createdAt: Date.now(),
     };
     setPresets((prev) => [newPreset, ...prev]);
+  }, []);
+
+  const updatePreset = useCallback((id: string, name: string, cfg: TypographyConfig) => {
+    setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, name, config: { ...cfg } } : p)));
+    setActivePreset((prev) => (prev.id === id ? { ...prev, name, config: { ...cfg } } : prev));
   }, []);
 
   const deletePreset = useCallback((id: string) => {
@@ -136,6 +146,7 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
       if (found) {
         setActivePreset(found);
         setPreviewPreset(null);
+        setDraftConfig(null);
       }
       return prev;
     });
@@ -147,25 +158,34 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
     return presets.filter((p) => p.name.toLowerCase().includes(lower));
   }, [presets]);
 
-  const updateTitleFont = useCallback((name: string, data: string) => {
-    setActivePreset((prev) => ({
-      ...prev,
-      config: { ...prev.config, titleFontName: name, titleFontData: data },
-    }));
+  const updateDraftFont = useCallback((type: "title" | "body", name: string, data: string) => {
+    setDraftConfig((prev) => {
+      const base = prev || activePreset.config;
+      if (type === "title") {
+        return { ...base, titleFontName: name, titleFontData: data };
+      }
+      return { ...base, bodyFontName: name, bodyFontData: data };
+    });
+  }, [activePreset.config]);
+
+  const updateDraftSizes = useCallback((title: number, subtitle: number, paragraph: number) => {
+    setDraftConfig((prev) => {
+      const base = prev || activePreset.config;
+      return { ...base, titleSize: title, subtitleSize: subtitle, paragraphSize: paragraph };
+    });
+  }, [activePreset.config]);
+
+  const applyDraft = useCallback(() => {
+    setDraftConfig((prev) => {
+      if (prev) {
+        setActivePreset((current) => ({ ...current, config: { ...prev } }));
+      }
+      return null;
+    });
   }, []);
 
-  const updateBodyFont = useCallback((name: string, data: string) => {
-    setActivePreset((prev) => ({
-      ...prev,
-      config: { ...prev.config, bodyFontName: name, bodyFontData: data },
-    }));
-  }, []);
-
-  const updateSizes = useCallback((title: number, subtitle: number, paragraph: number) => {
-    setActivePreset((prev) => ({
-      ...prev,
-      config: { ...prev.config, titleSize: title, subtitleSize: subtitle, paragraphSize: paragraph },
-    }));
+  const resetDraft = useCallback(() => {
+    setDraftConfig(null);
   }, []);
 
   return (
@@ -174,15 +194,19 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
         presets,
         activePreset,
         previewPreset,
+        draftConfig,
         config,
         savePreset,
+        updatePreset,
         deletePreset,
         activatePreset,
         searchPresets,
         setPreviewPreset,
-        updateTitleFont,
-        updateBodyFont,
-        updateSizes,
+        updateDraftFont,
+        updateDraftSizes,
+        applyDraft,
+        resetDraft,
+        hasDraft: draftConfig !== null,
       }}
     >
       {children}
