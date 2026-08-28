@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { PaletteProvider } from "@/context/PaletteContext";
 import { TypographyProvider } from "@/context/TypographyContext";
+import { CVCProvider } from "@/context/CVCContext";
 import { ToastProvider } from "@/components/Toast";
 import PaletteStyles from "@/components/PaletteStyles";
 
@@ -21,10 +22,12 @@ export default function RootLayout({
       <body className="min-h-screen">
         <PaletteProvider>
           <TypographyProvider>
-            <ToastProvider>
-              <PaletteStyles />
-              {children}
-            </ToastProvider>
+            <CVCProvider>
+              <ToastProvider>
+                <PaletteStyles />
+                {children}
+              </ToastProvider>
+            </CVCProvider>
           </TypographyProvider>
         </PaletteProvider>
       </body>

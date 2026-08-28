@@ -6,6 +6,7 @@ import { useTypography } from "@/context/TypographyContext";
 import { useToast } from "@/components/Toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CVCBuilder from "@/components/CVCBuilder";
 
 const ROLE_LABELS: Record<string, string> = {
   background: "Background",
@@ -1251,6 +1252,18 @@ export default function SettingsPage() {
                   <div className="sticky top-24">
                     <LivePreview />
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* CV Builder Section */}
+            <section>
+              <h2 className="text-xs tracking-[0.2em] uppercase mb-6 font-semibold" style={{ color: "var(--color-accent)" }}>
+                CV Builder
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="lg:col-span-1">
+                  <CVCBuilder />
                 </div>
               </div>
             </section>
