@@ -1261,11 +1261,7 @@ export default function SettingsPage() {
               <h2 className="text-xs tracking-[0.2em] uppercase mb-6 font-semibold" style={{ color: "var(--color-accent)" }}>
                 CV Builder
               </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="lg:col-span-1">
-                  <CVCBuilder />
-                </div>
-              </div>
+              <CVCBuilder />
             </section>
           </div>
         </div>

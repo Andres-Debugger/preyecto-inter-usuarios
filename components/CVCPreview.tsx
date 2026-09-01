@@ -27,8 +27,8 @@ export default function CVCPreview({ cvData, ref }: CVCPreviewProps) {
       style={{
         backgroundColor: "var(--color-bg)",
         color: "var(--color-text)",
-        width: "210mm",
-        minHeight: "297mm",
+        width: "794px",
+        minHeight: "1123px",
         boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
         display: "flex",
         flexDirection: "column",

@@ -29,9 +29,9 @@ interface CVCFormProps {
 
 function SectionTitle({ title, icon }: { title: string; icon: any }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "1.5rem", marginBottom: "0.5rem" }}>
-      <FontAwesomeIcon icon={icon} style={{ color: "var(--color-accent)" }} />
-      <h3 style={{ color: "var(--color-text)", fontSize: "1.1rem", borderBottom: "1px solid var(--color-surface)", paddingBottom: "0.3rem" }}>
+    <div className="flex items-center gap-2 mt-6 mb-3 pb-2 border-b border-gray-200">
+      <FontAwesomeIcon icon={icon} className="text-[var(--color-accent)] text-sm" />
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text)]">
         {title}
       </h3>
     </div>
@@ -40,8 +40,8 @@ function SectionTitle({ title, icon }: { title: string; icon: any }) {
 
 function InputGroup({ label, children, className = "", style }: { label: string; children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`input-group ${className}`} style={{ marginBottom: "1rem", ...style }}>
-      <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-muted)", marginBottom: "0.3rem", display: "block" }}>
+    <div className={`mb-3 ${className}`} style={style}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">
         {label}
       </label>
       {children}
@@ -79,24 +79,7 @@ function Input({
       onChange={handleChange}
       onKeyDown={onKeyDown}
       placeholder={placeholder}
-      style={{
-        padding: "0.6rem",
-        border: "1px solid var(--color-muted)",
-        borderRadius: "4px",
-        backgroundColor: "#fff",
-        color: "var(--color-text)",
-        width: "100%",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-        outline: "none",
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = "var(--color-accent)";
-        e.target.style.boxShadow = "0 0 0 2px rgba(185, 138, 90, 0.2)";
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = "var(--color-muted)";
-        e.target.style.boxShadow = "none";
-      }}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded bg-white text-[var(--color-text)] transition-all focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
     />
   );
 }
@@ -118,27 +101,7 @@ function Textarea({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      style={{
-        padding: "0.6rem",
-        border: "1px solid var(--color-muted)",
-        borderRadius: "4px",
-        backgroundColor: "#fff",
-        color: "var(--color-text)",
-        width: "100%",
-        resize: "vertical",
-        minHeight: "80px",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-        outline: "none",
-        fontFamily: "inherit",
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = "var(--color-accent)";
-        e.target.style.boxShadow = "0 0 0 2px rgba(185, 138, 90, 0.2)";
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = "var(--color-muted)";
-        e.target.style.boxShadow = "none";
-      }}
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded bg-white text-[var(--color-text)] resize-y min-h-[80px] transition-all focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 font-inherit"
     />
   );
 }
@@ -189,36 +152,12 @@ function DynamicItem<T extends { id: string }>({
   }, [item.id, setItems]);
 
   return (
-    <div
-      className="dynamic-item"
-      style={{
-        backgroundColor: "var(--color-surface)",
-        padding: "1rem",
-        borderRadius: "6px",
-        marginBottom: "1rem",
-        position: "relative",
-      }}
-    >
+    <div className="relative bg-gray-50 p-3 rounded border border-gray-100 mb-3">
       <button
-        className="btn-remove"
         onClick={() => onRemove(item.id)}
-        style={{
-          position: "absolute",
-          top: "0.5rem",
-          right: "0.5rem",
-          background: "#ff4d4d",
-          color: "white",
-          border: "none",
-          borderRadius: "50%",
-          width: "24px",
-          height: "24px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
       >
-        <FontAwesomeIcon icon={faTimes} style={{ fontSize: "10px" }} />
+        <FontAwesomeIcon icon={faTimes} style={{ fontSize: "8px" }} />
       </button>
       {renderFields(item, updateField)}
     </div>
@@ -230,29 +169,7 @@ function AddButton({ onClick, label, icon }: { onClick: () => void; label: strin
     <button
       type="button"
       onClick={onClick}
-      className="btn"
-      style={{
-        backgroundColor: "var(--color-surface)",
-        color: "var(--color-text)",
-        border: "1px solid var(--color-muted)",
-        padding: "0.5rem 1rem",
-        borderRadius: "4px",
-        cursor: "pointer",
-        fontWeight: 600,
-        transition: "all 0.2s",
-        marginTop: "0.5rem",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "0.5rem",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "var(--color-muted)";
-        e.currentTarget.style.color = "#fff";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = "var(--color-surface)";
-        e.currentTarget.style.color = "var(--color-text)";
-      }}
+      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded bg-white text-[var(--color-text)] hover:bg-[var(--color-muted)] hover:text-white transition-all mt-2"
     >
       <FontAwesomeIcon icon={icon} />
       {label}
@@ -633,8 +550,8 @@ export default function CVCForm({ onDownloadPDF }: CVCFormProps) {
   };
 
   return (
-    <div className="form-section" style={{ padding: "2rem", overflowY: "auto", borderRight: "2px solid var(--color-surface)", flex: 1 }}>
-      <h2 style={{ color: "var(--color-accent)", marginBottom: "1.5rem" }}>Configura tu CV</h2>
+    <div className="form-section border p-6 rounded-lg" style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)", backgroundColor: "var(--color-surface)" }}>
+      <h2 className="text-lg font-semibold text-[var(--color-accent)] mb-4">Configura tu CV</h2>
 
       <PersonalInfoSection data={currentData.personal} updateDraft={updateDraft} />
       <ContactSection data={currentData.contact} updateDraft={updateDraft} />
@@ -644,79 +561,35 @@ export default function CVCForm({ onDownloadPDF }: CVCFormProps) {
       <CompetenciesSection data={currentData.competencies} updateDraft={updateDraft} />
       <SkillsSection data={currentData.skills} updateDraft={updateDraft} />
 
-      <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem", flexWrap: "wrap" }}>
+      <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t" style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)" }}>
+        <button
+          onClick={onDownloadPDF}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "var(--color-accent)" }}
+        >
+          <FontAwesomeIcon icon={faFilePdf} />
+          Download PDF
+        </button>
         {hasDraft && (
           <>
             <button
               onClick={handleReset}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text)",
-                border: "1px solid var(--color-muted)",
-                padding: "0.5rem 1rem",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: 600,
-                transition: "all 0.2s",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--color-muted)";
-                e.currentTarget.style.color = "#fff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--color-surface)";
-                e.currentTarget.style.color = "var(--color-text)";
-              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg transition-colors hover:opacity-80"
+              style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
             >
-              <FontAwesomeIcon icon={faTimes} /> Reset
+              <FontAwesomeIcon icon={faTimes} />
+              Reset
             </button>
             <button
               onClick={handleApply}
-              style={{
-                backgroundColor: "var(--color-accent)",
-                color: "#fff",
-                border: "none",
-                padding: "0.5rem 1rem",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: 600,
-                transition: "all 0.2s",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#9d7348"; }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: "var(--color-accent)" }}
             >
-              <FontAwesomeIcon icon={faCheck} /> Aplicar Cambios
+              <FontAwesomeIcon icon={faCheck} />
+              Apply Changes
             </button>
           </>
         )}
-        <button
-          onClick={onDownloadPDF}
-          style={{
-            backgroundColor: "var(--color-accent)",
-            color: "#fff",
-            border: "none",
-            padding: "1rem",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: 600,
-            fontSize: "1.1rem",
-            width: "100%",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            marginTop: "1rem",
-            transition: "all 0.2s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#9d7348"; }}
-        >
-          <FontAwesomeIcon icon={faFilePdf} /> Descargar CV en PDF
-        </button>
       </div>
     </div>
   );
