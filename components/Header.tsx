@@ -40,6 +40,7 @@ export default function Header() {
     { label: "Necklaces", href: "/necklaces" },
     { label: "Bracelets", href: "/bracelets" },
     { label: "About", href: "/#about" },
+    { label: "Tangrams", href: "/tangrams" },
     { label: "Settings", href: "/settings" },
   ];
 

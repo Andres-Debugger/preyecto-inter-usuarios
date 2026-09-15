@@ -47,6 +47,24 @@ export default function CVCBuilder() {
 
     const html2pdf = (await import("html2pdf.js")).default;
 
+    // Reset transforms on element and parent wrapper for accurate capture
+    const parentWrapper = element.parentElement;
+    const grandparentWrapper = parentWrapper?.parentElement;
+
+    const originals = {
+      element: { transform: element.style.transform, transformOrigin: element.style.transformOrigin },
+      parent: parentWrapper ? { transform: parentWrapper.style.transform, transformOrigin: parentWrapper.style.transformOrigin, width: parentWrapper.style.width } : null,
+      grandparent: grandparentWrapper ? { height: grandparentWrapper.style.height } : null,
+    };
+
+    if (parentWrapper) {
+      parentWrapper.style.transform = "scale(1)";
+      parentWrapper.style.transformOrigin = "top left";
+      parentWrapper.style.width = `${A4_WIDTH}px`;
+    }
+    if (grandparentWrapper) {
+      grandparentWrapper.style.height = `${A4_HEIGHT}px`;
+    }
     element.style.transform = "scale(1)";
     element.style.transformOrigin = "top left";
 
@@ -61,7 +79,17 @@ export default function CVCBuilder() {
     try {
       await html2pdf().set(opt).from(element).save();
     } finally {
-      element.style.transform = "";
+      // Restore original transforms
+      element.style.transform = originals.element.transform;
+      element.style.transformOrigin = originals.element.transformOrigin;
+      if (parentWrapper && originals.parent) {
+        parentWrapper.style.transform = originals.parent.transform;
+        parentWrapper.style.transformOrigin = originals.parent.transformOrigin;
+        parentWrapper.style.width = originals.parent.width;
+      }
+      if (grandparentWrapper && originals.grandparent) {
+        grandparentWrapper.style.height = originals.grandparent.height;
+      }
     }
   };
 

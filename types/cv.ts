@@ -102,7 +102,7 @@ export interface ValidationRule {
 }
 
 const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-const URL_RE = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/[^\s]*)?$/;
+const URL_RE = /^(https?:\/\/)?[\w\-]+(\.[\w\-]+)*\.[a-zA-Z]{2,}(:\d+)?(\/[^\s]*)?$/;
 const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/;
 const DATE_RE = /^\d{4}\s*-\s*(\d{4}|Presente|Actual)$/i;
 
