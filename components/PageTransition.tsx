@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import TangramViewer from "@/components/TangramViewer";
 import { usePalette } from "@/context/PaletteContext";
 
-const MIN_VISIBLE_MS = 11000;
+const MIN_VISIBLE_MS = 6500;
 const FADE_MS = 500;
 
 export default function PageTransition() {
