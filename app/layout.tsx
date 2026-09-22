@@ -3,6 +3,7 @@ import "./globals.css";
 import { PaletteProvider } from "@/context/PaletteContext";
 import { TypographyProvider } from "@/context/TypographyContext";
 import { CVCProvider } from "@/context/CVCContext";
+import { TangramProvider } from "@/context/TangramContext";
 import { ToastProvider } from "@/components/Toast";
 import PaletteStyles from "@/components/PaletteStyles";
 
@@ -23,10 +24,12 @@ export default function RootLayout({
         <PaletteProvider>
           <TypographyProvider>
             <CVCProvider>
-              <ToastProvider>
-                <PaletteStyles />
-                {children}
-              </ToastProvider>
+              <TangramProvider>
+                <ToastProvider>
+                  <PaletteStyles />
+                  {children}
+                </ToastProvider>
+              </TangramProvider>
             </CVCProvider>
           </TypographyProvider>
         </PaletteProvider>
