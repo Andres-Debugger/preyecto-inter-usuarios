@@ -16,6 +16,13 @@ export default function TangramConfig() {
   const selectedFigure = config.figures[selectedFigureIdx];
   const colors = activePalette.colors;
 
+  const effectiveSize = (pieceId: number): [number, number] => {
+    const figSize = selectedFigure?.sizes?.[pieceId];
+    if (figSize) return figSize;
+    const p = config.pieces.find((pp) => pp.id === pieceId);
+    return p ? [p.w, p.h] : [0, 0];
+  };
+
   const setPlaceValue = (axis: 0 | 1 | 2, value: number) => {
     if (!selectedFigure) return;
     const place = selectedFigure.place.map((p, idx) => {
@@ -76,7 +83,7 @@ export default function TangramConfig() {
                     {piece.name}
                   </p>
                   <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-                    {piece.w}×{piece.h}
+                    {effectiveSize(piece.id)[0]}×{effectiveSize(piece.id)[1]}
                   </p>
                 </div>
 
@@ -134,7 +141,7 @@ export default function TangramConfig() {
                   type="number"
                   min={5}
                   max={400}
-                  value={selected.w}
+                  value={effectiveSize(selected.id)[0]}
                   onChange={(e) =>
                     updatePiece(selected.id, { w: Math.max(5, parseInt(e.target.value) || 5) })
                   }
@@ -154,7 +161,7 @@ export default function TangramConfig() {
                   type="number"
                   min={5}
                   max={400}
-                  value={selected.h}
+                  value={effectiveSize(selected.id)[1]}
                   onChange={(e) =>
                     updatePiece(selected.id, { h: Math.max(5, parseInt(e.target.value) || 5) })
                   }
@@ -167,6 +174,9 @@ export default function TangramConfig() {
                 />
               </div>
             </div>
+            <p className="text-xs -mt-3" style={{ color: "var(--color-muted)" }}>
+              Size changes apply to all 3 figures
+            </p>
 
             {/* Clip Path (fixed per piece) */}
             <div>
@@ -302,8 +312,8 @@ export default function TangramConfig() {
               >
                 <div
                   style={{
-                    width: Math.min(selected.w, 120),
-                    height: Math.min(selected.h, 80),
+                    width: Math.min(effectiveSize(selected.id)[0], 120),
+                    height: Math.min(effectiveSize(selected.id)[1], 80),
                     clipPath: selected.clipPath,
                     backgroundColor: colors[selectedId],
                     transform: `rotate(${config.figures[selectedFigureIdx]?.place[selectedId]?.[2] || 0}deg)`,
@@ -347,13 +357,13 @@ export default function TangramConfig() {
               <strong style={{ color: "var(--color-text)" }}>Toggle visibility</strong> — hide/show pieces
             </li>
             <li>
-              <strong style={{ color: "var(--color-text)" }}>Resize</strong> — change width and height in pixels
+              <strong style={{ color: "var(--color-text)" }}>Resize</strong> — change width/height (applies to all figures)
             </li>
             <li>
-              <strong style={{ color: "var(--color-text)" }}>Reshape</strong> — edit the polygon clip-path (fixed per piece)
+              <strong style={{ color: "var(--color-text)" }}>Reshape</strong> — edit the polygon clip-path (applies to all figures)
             </li>
             <li>
-              <strong style={{ color: "var(--color-text)" }}>Position</strong> — set left, top, rotation per figure
+              <strong style={{ color: "var(--color-text)" }}>Position</strong> — set left, top, rotation (per figure)
             </li>
             <li>
               <strong style={{ color: "var(--color-text)" }}>Reset</strong> — restore original values

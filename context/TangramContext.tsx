@@ -14,7 +14,7 @@ interface TangramContextType {
   resetFigure: (id: number) => void;
 }
 
-const STORAGE_KEY = "celestique-tangram-config-v6";
+const STORAGE_KEY = "celestique-tangram-config-v10";
 
 function isValidClipPath(cp: unknown): cp is string {
   return typeof cp === "string" && cp.startsWith("polygon(");
@@ -60,10 +60,22 @@ export function TangramProvider({ children }: { children: React.ReactNode }) {
   }, [config, loaded]);
 
   const updatePiece = useCallback((id: number, updates: Partial<TangramPieceConfig>) => {
-    setConfig((prev) => ({
-      ...prev,
-      pieces: prev.pieces.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-    }));
+    setConfig((prev) => {
+      const pieces = prev.pieces.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      let figures = prev.figures;
+      if (updates.w !== undefined || updates.h !== undefined) {
+        const idx = prev.pieces.findIndex((p) => p.id === id);
+        if (idx >= 0) {
+          const { w, h } = pieces[idx];
+          figures = prev.figures.map((fig) => {
+            const sizes = [...(fig.sizes ?? prev.pieces.map((p) => [p.w, p.h] as [number, number]))];
+            sizes[idx] = [w, h];
+            return { ...fig, sizes };
+          });
+        }
+      }
+      return { ...prev, pieces, figures };
+    });
   }, []);
 
   const togglePiece = useCallback((id: number) => {
@@ -76,10 +88,19 @@ export function TangramProvider({ children }: { children: React.ReactNode }) {
   const resetPiece = useCallback((id: number) => {
     const original = DEFAULT_CONFIG.pieces.find((p) => p.id === id);
     if (!original) return;
-    setConfig((prev) => ({
-      ...prev,
-      pieces: prev.pieces.map((p) => (p.id === id ? { ...original } : p)),
-    }));
+    setConfig((prev) => {
+      const pieces = prev.pieces.map((p) => (p.id === id ? { ...original } : p));
+      const idx = prev.pieces.findIndex((p) => p.id === id);
+      const figures = prev.figures.map((fig) => {
+        const defFig = DEFAULT_CONFIG.figures.find((f) => f.id === fig.id);
+        const defSize = defFig?.sizes?.[idx];
+        if (!defSize) return fig;
+        const sizes = [...(fig.sizes ?? prev.pieces.map((p) => [p.w, p.h] as [number, number]))];
+        sizes[idx] = defSize;
+        return { ...fig, sizes };
+      });
+      return { ...prev, pieces, figures };
+    });
   }, []);
 
   const updateFigure = useCallback((id: number, updates: Partial<TangramFigureConfig>) => {
