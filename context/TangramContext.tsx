@@ -1,18 +1,24 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import type { TangramConfig, TangramPieceConfig } from "@/types/tangram";
+import type { TangramConfig, TangramPieceConfig, TangramFigureConfig } from "@/types/tangram";
 import { DEFAULT_CONFIG } from "@/types/tangram";
 
 interface TangramContextType {
   config: TangramConfig;
   updatePiece: (id: number, updates: Partial<TangramPieceConfig>) => void;
+  updateFigure: (id: number, updates: Partial<TangramFigureConfig>) => void;
   togglePiece: (id: number) => void;
   resetConfig: () => void;
   resetPiece: (id: number) => void;
+  resetFigure: (id: number) => void;
 }
 
-const STORAGE_KEY = "celestique-tangram-config";
+const STORAGE_KEY = "celestique-tangram-config-v6";
+
+function isValidClipPath(cp: unknown): cp is string {
+  return typeof cp === "string" && cp.startsWith("polygon(");
+}
 
 function loadConfig(): TangramConfig {
   if (typeof window === "undefined") return DEFAULT_CONFIG;
@@ -20,7 +26,16 @@ function loadConfig(): TangramConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_CONFIG;
     const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.pieces) && parsed.pieces.length === 7) return parsed;
+    if (
+      parsed &&
+      Array.isArray(parsed.pieces) &&
+      parsed.pieces.length === 7 &&
+      parsed.pieces.every((p: { clipPath?: unknown }) => isValidClipPath(p.clipPath)) &&
+      Array.isArray(parsed.figures) &&
+      parsed.figures.length === DEFAULT_CONFIG.figures.length
+    ) {
+      return parsed;
+    }
     return DEFAULT_CONFIG;
   } catch {
     return DEFAULT_CONFIG;
@@ -67,6 +82,22 @@ export function TangramProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateFigure = useCallback((id: number, updates: Partial<TangramFigureConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      figures: prev.figures.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+    }));
+  }, []);
+
+  const resetFigure = useCallback((id: number) => {
+    const original = DEFAULT_CONFIG.figures.find((f) => f.id === id);
+    if (!original) return;
+    setConfig((prev) => ({
+      ...prev,
+      figures: prev.figures.map((f) => (f.id === id ? { ...original } : f)),
+    }));
+  }, []);
+
   const resetConfig = useCallback(() => {
     setConfig(DEFAULT_CONFIG);
   }, []);
@@ -75,7 +106,15 @@ export function TangramProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <TangramContext.Provider
-      value={{ config, updatePiece, togglePiece, resetConfig, resetPiece }}
+      value={{
+        config,
+        updatePiece,
+        updateFigure,
+        togglePiece,
+        resetConfig,
+        resetPiece,
+        resetFigure,
+      }}
     >
       {children}
     </TangramContext.Provider>

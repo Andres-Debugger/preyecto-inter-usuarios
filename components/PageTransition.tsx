@@ -1,37 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import TangramViewer from "@/components/TangramViewer";
 import { usePalette } from "@/context/PaletteContext";
 
-const MIN_VISIBLE_MS = 18000;
-const FADE_MS = 800;
+const MIN_VISIBLE_MS = 11000;
+const FADE_MS = 500;
 
-export default function Loading() {
+export default function PageTransition() {
+  const pathname = usePathname();
   const { activePalette } = usePalette();
+  const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [startTime] = useState(() => Date.now());
-
-  const handleCycleComplete = useCallback(() => {
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-
-    setTimeout(() => {
-      setFading(true);
-      setTimeout(() => setHidden(true), FADE_MS);
-    }, remaining);
-  }, [startTime]);
 
   useEffect(() => {
+    setVisible(true);
+    setFading(false);
+
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(() => {
       setFading(true);
-      setTimeout(() => setHidden(true), FADE_MS);
+      hideTimer = setTimeout(() => setVisible(false), FADE_MS);
     }, MIN_VISIBLE_MS);
-    return () => clearTimeout(timer);
-  }, []);
 
-  if (hidden) return null;
+    return () => {
+      clearTimeout(timer);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [pathname]);
+
+  if (!visible) return null;
 
   return (
     <div
@@ -45,7 +44,7 @@ export default function Loading() {
       }}
     >
       <div className="w-full max-w-xl px-8">
-        <TangramViewer autoPlay onCycleComplete={handleCycleComplete} />
+        <TangramViewer autoPlay />
       </div>
     </div>
   );

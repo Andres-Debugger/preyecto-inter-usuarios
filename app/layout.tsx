@@ -6,6 +6,7 @@ import { CVCProvider } from "@/context/CVCContext";
 import { TangramProvider } from "@/context/TangramContext";
 import { ToastProvider } from "@/components/Toast";
 import PaletteStyles from "@/components/PaletteStyles";
+import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
   title: "Brillo & Co | Fine Jewelry",
@@ -27,6 +28,7 @@ export default function RootLayout({
               <TangramProvider>
                 <ToastProvider>
                   <PaletteStyles />
+                  <PageTransition />
                   {children}
                 </ToastProvider>
               </TangramProvider>
