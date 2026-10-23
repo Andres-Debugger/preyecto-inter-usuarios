@@ -40,8 +40,10 @@ export default function Header() {
     { label: "Necklaces", href: "/necklaces" },
     { label: "Bracelets", href: "/bracelets" },
     { label: "About", href: "/#about" },
+    { label: "Gallery", href: "/#gallery" },
     { label: "Tangrams", href: "/tangrams" },
     { label: "Settings", href: "/settings" },
+    { label: "Admin", href: "/admin" },
   ];
 
   const textColor = scrolled ? "var(--color-text)" : "white";
