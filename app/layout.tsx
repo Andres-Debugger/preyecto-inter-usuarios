@@ -1,3 +1,4 @@
+import "cropperjs/dist/cropper.css";
 import type { Metadata } from "next";
 import "./globals.css";
 import { PaletteProvider } from "@/context/PaletteContext";
@@ -5,6 +6,8 @@ import { TypographyProvider } from "@/context/TypographyContext";
 import { CVCProvider } from "@/context/CVCContext";
 import { TangramProvider } from "@/context/TangramContext";
 import { ToastProvider } from "@/components/Toast";
+import { VideoProvider } from "@/context/VideoContext";
+import { GalleryProvider } from "@/context/GalleryContext";
 import PaletteStyles from "@/components/PaletteStyles";
 import PageTransition from "@/components/PageTransition";
 
@@ -27,9 +30,13 @@ export default function RootLayout({
             <CVCProvider>
               <TangramProvider>
                 <ToastProvider>
-                  <PaletteStyles />
-                  <PageTransition />
-                  {children}
+                  <VideoProvider>
+                    <GalleryProvider>
+                      <PaletteStyles />
+                      <PageTransition />
+                      {children}
+                    </GalleryProvider>
+                  </VideoProvider>
                 </ToastProvider>
               </TangramProvider>
             </CVCProvider>

@@ -24,6 +24,14 @@
     background-color: var(--color-accent, #C9B696);
     color: var(--color-text, #2A2522);
   }
+
+  video::cue {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+    font-family: var(--font-body, Inter, sans-serif);
+    font-size: 0.9em;
+    line-height: 1.4;
+  }
 }
 
 @layer components {
