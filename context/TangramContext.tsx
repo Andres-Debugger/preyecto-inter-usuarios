@@ -14,17 +14,17 @@ interface TangramContextType {
   resetFigure: (id: number) => void;
 }
 
-const STORAGE_KEY = "celestique-tangram-config-v10";
+const STORAGE_KEY = "celestique-tangram-config-v11";
+const LEGACY_STORAGE_KEY = "celestique-tangram-config-v10";
 
 function isValidClipPath(cp: unknown): cp is string {
   return typeof cp === "string" && cp.startsWith("polygon(");
 }
 
-function loadConfig(): TangramConfig {
-  if (typeof window === "undefined") return DEFAULT_CONFIG;
+function readConfig(key: string): TangramConfig | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_CONFIG;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (
       parsed &&
@@ -34,12 +34,43 @@ function loadConfig(): TangramConfig {
       Array.isArray(parsed.figures) &&
       parsed.figures.length === DEFAULT_CONFIG.figures.length
     ) {
-      return parsed;
+      return parsed as TangramConfig;
     }
-    return DEFAULT_CONFIG;
+    return null;
   } catch {
-    return DEFAULT_CONFIG;
+    return null;
   }
+}
+
+function migrateFigure89(config: TangramConfig): TangramConfig {
+  const defaultFigure = DEFAULT_CONFIG.figures.find((f) => f.id === 89);
+  const defaultClip = defaultFigure?.clips?.[4];
+  const defaultPlace = defaultFigure?.place?.[4];
+  const defaultSize = defaultFigure?.sizes?.[4];
+  if (!defaultClip || !defaultPlace || !defaultSize) return config;
+
+  let changed = false;
+  const figures = config.figures.map((figure) => {
+    if (figure.id !== 89) return figure;
+    changed = true;
+    const place = [...figure.place];
+    place[4] = [defaultPlace[0], defaultPlace[1], defaultPlace[2]];
+    const sizes = [...(figure.sizes ?? [])];
+    sizes[4] = [defaultSize[0], defaultSize[1]];
+    const clips = [...(figure.clips ?? [])];
+    clips[4] = defaultClip;
+    return { ...figure, place, sizes, clips };
+  });
+  return changed ? { ...config, figures } : config;
+}
+
+function loadConfig(): TangramConfig {
+  if (typeof window === "undefined") return DEFAULT_CONFIG;
+  const current = readConfig(STORAGE_KEY);
+  if (current) return current;
+  const legacy = readConfig(LEGACY_STORAGE_KEY);
+  if (legacy) return migrateFigure89(legacy);
+  return DEFAULT_CONFIG;
 }
 
 const TangramContext = createContext<TangramContextType | null>(null);
@@ -56,6 +87,7 @@ export function TangramProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
   }, [config, loaded]);
 

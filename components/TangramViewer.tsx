@@ -70,6 +70,7 @@ export default function TangramViewer({ autoPlay = false }: TangramViewerProps) 
             const size = figure.sizes?.[i];
             const w = size ? size[0] : piece.w;
             const h = size ? size[1] : piece.h;
+            const clipPath = figure.clips?.[i] ?? piece.clipPath;
 
             return (
               <div
@@ -80,7 +81,7 @@ export default function TangramViewer({ autoPlay = false }: TangramViewerProps) 
                   height: h,
                   left,
                   top,
-                  clipPath: piece.clipPath,
+                  clipPath,
                   backgroundColor: colors[i],
                   transform: `rotate(${rotate}deg)`,
                   transformOrigin: "center center",

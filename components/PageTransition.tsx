@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import TangramViewer from "@/components/TangramViewer";
 import { usePalette } from "@/context/PaletteContext";
+import { isPageLoaderEnabled } from "@/utils/loaderPreference";
 
 const MIN_VISIBLE_MS = 6500;
 const FADE_MS = 500;
@@ -15,8 +16,12 @@ export default function PageTransition() {
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    setVisible(true);
     setFading(false);
+    if (!isPageLoaderEnabled()) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
 
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(() => {
@@ -34,7 +39,7 @@ export default function PageTransition() {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center"
+      className="page-loading-overlay fixed inset-0 flex items-center justify-center"
       style={{
         zIndex: 9999,
         backgroundColor: activePalette.mode === "dark" ? "#1C1917" : "#F5F0E8",

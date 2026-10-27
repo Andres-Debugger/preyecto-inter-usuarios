@@ -23,6 +23,21 @@ export default function TangramConfig() {
     return p ? [p.w, p.h] : [0, 0];
   };
 
+  const effectiveClipPath = (pieceId: number): string => {
+    const override = selectedFigure?.clips?.[pieceId];
+    if (override) return override;
+    return config.pieces.find((p) => p.id === pieceId)?.clipPath ?? "";
+  };
+
+  const setClipOverride = (value: string) => {
+    if (!selectedFigure) return;
+    const clips = Array.from({ length: config.pieces.length }, (_, index) =>
+      selectedFigure.clips?.[index] ?? null
+    );
+    clips[selectedId] = value.trim() ? value : null;
+    updateFigure(selectedFigure.id, { clips });
+  };
+
   const setPlaceValue = (axis: 0 | 1 | 2, value: number) => {
     if (!selectedFigure) return;
     const place = selectedFigure.place.map((p, idx) => {
@@ -195,7 +210,40 @@ export default function TangramConfig() {
                 }}
               />
               <p className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>
-                Shape of the piece (fixed across all figures)
+                Base shape; figures can override it
+              </p>
+            </div>
+
+            {/* Per-figure clip override */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium" style={{ color: "var(--color-muted)" }}>
+                  Figure clip override (optional)
+                </label>
+                {selectedFigure?.clips?.[selectedId] && (
+                  <button
+                    onClick={() => setClipOverride("")}
+                    className="text-[10px] tracking-wider uppercase transition-opacity hover:opacity-60"
+                    style={{ color: "var(--color-accent)" }}
+                  >
+                    Use base shape
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                value={selectedFigure?.clips?.[selectedId] ?? ""}
+                onChange={(e) => setClipOverride(e.target.value)}
+                placeholder={selected.clipPath}
+                className="w-full px-3 py-2 rounded-lg text-xs font-mono outline-none"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--color-bg) 60%, var(--color-text))",
+                  color: "var(--color-text)",
+                  border: "1px solid color-mix(in srgb, var(--color-muted) 30%, transparent)",
+                }}
+              />
+              <p className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>
+                Applies only to {selectedFigure?.name ?? "this figure"}.
               </p>
             </div>
 
@@ -314,7 +362,7 @@ export default function TangramConfig() {
                   style={{
                     width: Math.min(effectiveSize(selected.id)[0], 120),
                     height: Math.min(effectiveSize(selected.id)[1], 80),
-                    clipPath: selected.clipPath,
+                    clipPath: effectiveClipPath(selected.id),
                     backgroundColor: colors[selectedId],
                     transform: `rotate(${config.figures[selectedFigureIdx]?.place[selectedId]?.[2] || 0}deg)`,
                     transition: "all 0.3s ease",
@@ -360,7 +408,7 @@ export default function TangramConfig() {
               <strong style={{ color: "var(--color-text)" }}>Resize</strong> — change width/height (applies to all figures)
             </li>
             <li>
-              <strong style={{ color: "var(--color-text)" }}>Reshape</strong> — edit the polygon clip-path (applies to all figures)
+              <strong style={{ color: "var(--color-text)" }}>Reshape</strong> — edit the base clip-path or override it per figure
             </li>
             <li>
               <strong style={{ color: "var(--color-text)" }}>Position</strong> — set left, top, rotation (per figure)

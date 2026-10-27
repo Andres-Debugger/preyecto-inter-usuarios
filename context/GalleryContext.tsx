@@ -17,12 +17,14 @@ import {
   deletePhoto,
   hydratePhoto,
   createDefaultPhotos,
+  backfillDemoDescriptions,
   sortPhotos,
   nextOrder,
   buildPhotoRecord,
 } from "@/utils/galleryStorage";
 
 const SEED_FLAG = "celestique-gallery-seeded-v1";
+const DESCRIPTION_FLAG = "celestique-gallery-descriptions-v1";
 
 interface GalleryContextType {
   photos: PhotoItem[];
@@ -56,6 +58,15 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem(SEED_FLAG, "1");
         } else if (!seeded) {
           localStorage.setItem(SEED_FLAG, "1");
+        }
+        if (!localStorage.getItem(DESCRIPTION_FLAG)) {
+          const updated = backfillDemoDescriptions(recs);
+          if (updated.length > 0) {
+            await putPhotos(updated);
+            const byId = new Map(updated.map((record) => [record.id, record]));
+            recs = recs.map((record) => byId.get(record.id) ?? record);
+          }
+          localStorage.setItem(DESCRIPTION_FLAG, "1");
         }
         if (cancelled) return;
         setRecords(sortPhotos(recs));
