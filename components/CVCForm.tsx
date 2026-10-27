@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -21,8 +21,16 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useCVC } from "@/context/CVCContext";
 import { useToast } from "@/components/Toast";
-import { useCVData, useCVValidation } from "@/hooks/useCVData";
-import { CVData, generateId, capitalizeWords } from "@/types/cv";
+import { useCVValidation } from "@/hooks/useCVData";
+import {
+  capitalizeWords,
+  CVData,
+  DEFAULT_CV_PHOTO,
+  EducationItem,
+  ExperienceItem,
+  generateId,
+  sanitizeYearInput,
+} from "@/types/cv";
 
 interface CVCFormProps {
   onDownloadPDF: () => void;
@@ -73,6 +81,8 @@ function Input({
   type = "text",
   onKeyDown,
   autoCapitalize = false,
+  autoComplete,
+  inputMode,
   error = false,
 }: {
   value: string;
@@ -82,6 +92,8 @@ function Input({
   type?: string;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   autoCapitalize?: boolean;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   error?: boolean;
 }) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,6 +112,8 @@ function Input({
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       placeholder={placeholder}
+      autoComplete={autoComplete}
+      inputMode={inputMode}
       className={`w-full px-3 py-1.5 text-sm border rounded bg-white transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 ${
         error ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-[var(--color-accent)]"
       }`}
@@ -138,6 +152,25 @@ function Textarea({
   );
 }
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not load image"));
+    image.src = src;
+  });
+}
+
+function useSyncedItems<T>(data: T[]) {
+  const [items, setItems] = useState(data);
+
+  useEffect(() => {
+    setItems(data);
+  }, [data]);
+
+  return [items, setItems] as const;
+}
+
 function RangeInput({
   value,
   onChange,
@@ -167,22 +200,20 @@ function RangeInput({
 
 function DynamicItem<T extends { id: string }>({
   item,
-  index,
   items,
   setItems,
   renderFields,
   onRemove,
 }: {
   item: T;
-  index: number;
   items: T[];
-  setItems: React.Dispatch<React.SetStateAction<T[]>>;
+  setItems: (items: T[]) => void;
   renderFields: (item: T, updateField: (field: keyof T, value: any) => void) => React.ReactNode;
   onRemove: (id: string) => void;
 }) {
-  const updateField = useCallback((field: keyof T, value: any) => {
-    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, [field]: value } : i)));
-  }, [item.id, setItems]);
+  const updateField = (field: keyof T, value: any) => {
+    setItems(items.map((i) => (i.id === item.id ? { ...i, [field]: value } : i)));
+  };
 
   return (
     <div className="relative bg-gray-50 p-2.5 rounded border border-gray-100 mb-2 overflow-hidden">
@@ -224,38 +255,138 @@ function PersonalInfoSection({
   errors: Record<string, string>;
   validate: (key: string, value: string) => string | null;
 }) {
-  const handlePhotoChange = (value: string) => updateDraft({ personal: { ...data, photo: value } });
+  const { addToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
+  const hasPhoto = typeof data.photo === "string" && data.photo.trim().length > 0;
+  const photoButtonLabel = processingPhoto
+    ? "Processing..."
+    : hasPhoto
+      ? "Change photo"
+      : "Upload photo";
+
   const handleFirstNameChange = (value: string) => updateDraft({ personal: { ...data, firstName: value } });
   const handleLastNameChange = (value: string) => updateDraft({ personal: { ...data, lastName: value } });
   const handleTitleChange = (value: string) => updateDraft({ personal: { ...data, title: value } });
   const handleProfileChange = (value: string) => updateDraft({ personal: { ...data, profile: value } });
 
+  const handlePhotoFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+
+    const hasSupportedType = ["image/jpeg", "image/png", "image/webp"].includes(
+      file.type
+    );
+    const hasSupportedExtension = /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!hasSupportedType && !hasSupportedExtension) {
+      addToast("Please choose a JPG, PNG or WebP image", "error");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      addToast("Image must be 10 MB or smaller", "error");
+      return;
+    }
+
+    setProcessingPhoto(true);
+    const objectUrl = URL.createObjectURL(file);
+
+    try {
+      const image = await loadImage(objectUrl);
+      const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+      if (!sourceSize) throw new Error("Empty image");
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 400;
+      canvas.height = 400;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas unavailable");
+
+      context.fillStyle = "#F5F0E8";
+      context.fillRect(0, 0, 400, 400);
+      context.drawImage(
+        image,
+        (image.naturalWidth - sourceSize) / 2,
+        (image.naturalHeight - sourceSize) / 2,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        400,
+        400
+      );
+
+      const photo = canvas.toDataURL("image/jpeg", 0.85);
+      updateDraft({ personal: { ...data, photo } });
+      addToast("Photo updated", "success");
+    } catch {
+      addToast("Could not process that image", "error");
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      setProcessingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    updateDraft({ personal: { ...data, photo: "" } });
+    addToast("Photo removed", "info");
+  };
+
   return (
     <>
       <SectionTitle title="Personal Data" icon={faUser} />
 
-      {/* Photo preview */}
+      {/* Photo upload */}
       <div className="flex items-center gap-3 mb-3">
         <div
           className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden border-2 border-gray-200 flex-shrink-0"
           style={{ backgroundColor: "var(--color-surface)" }}
         >
-          {data.photo ? (
-            <img src={data.photo} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <FontAwesomeIcon icon={faCamera} className="text-gray-300 text-lg" />
-          )}
+          <img
+            src={hasPhoto ? data.photo : DEFAULT_CV_PHOTO}
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
         </div>
         <div className="flex-1">
-          <InputGroup label="Photo URL (optional)" error={errors["personal.photo"]}>
-            <Input
-              value={data.photo}
-              onChange={handlePhotoChange}
-              onBlur={() => validate("personal.photo", data.photo)}
-              placeholder="https://example.com/photo.jpg"
-              error={!!errors["personal.photo"]}
-            />
-          </InputGroup>
+          <p className="text-[11px] font-medium mb-1" style={{ color: "var(--color-muted)" }}>
+            Profile photo
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={processingPhoto}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium border rounded transition-colors hover:border-[var(--color-accent)] disabled:opacity-50"
+              style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
+            >
+              <FontAwesomeIcon icon={faCamera} />
+              {photoButtonLabel}
+            </button>
+            {hasPhoto && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded text-red-500 transition-colors hover:bg-red-50"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+                Remove
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoFile}
+            className="hidden"
+            aria-label="Upload profile photo"
+          />
+          <p className="text-[10px] mt-1" style={{ color: "var(--color-muted)" }}>
+            JPG, PNG or WebP. Max 10 MB.
+          </p>
         </div>
       </div>
 
@@ -368,34 +499,80 @@ function ExperienceSection({
   data,
   updateDraft,
   errors,
+  validateDateRangeFields,
 }: {
   data: CVData["experience"];
   updateDraft: (data: Partial<CVData>) => void;
   errors: Record<string, string>;
+  validateDateRangeFields: (
+    startKey: string,
+    startValue: string,
+    endKey: string,
+    endValue: string
+  ) => void;
 }) {
-  const [experiences, setExperiences] = useState(data);
+  const [experiences, setExperiences] = useSyncedItems(data);
 
-  const sync = (updated: typeof experiences) => {
+  const sync = (updated: ExperienceItem[]) => {
     setExperiences(updated);
     updateDraft({ experience: updated });
   };
 
-  const addExp = () => sync([...experiences, { id: generateId(), title: "", date: "", description: "" }]);
+  const addExp = () =>
+    sync([
+      ...experiences,
+      { id: generateId(), title: "", startDate: "", endDate: "", description: "" },
+    ]);
   const removeExp = (id: string) => sync(experiences.filter((e) => e.id !== id));
 
   return (
     <>
       <SectionTitle title="Work Experience" icon={faBriefcase} />
       {experiences.map((exp, i) => (
-        <DynamicItem key={exp.id} item={exp} index={i} items={experiences} setItems={setExperiences} onRemove={removeExp}
+        <DynamicItem key={exp.id} item={exp} items={experiences} setItems={sync} onRemove={removeExp}
           renderFields={(item, updateField) => (
             <>
               <InputGroup label="Position & Institution" error={errors[`experience[${i}].title`]}>
                 <Input value={item.title} onChange={(v) => updateField("title", v)} placeholder="Web Developer" error={!!errors[`experience[${i}].title`]} />
               </InputGroup>
-              <InputGroup label="Period" error={errors[`experience[${i}].date`]}>
-                <Input value={item.date} onChange={(v) => updateField("date", v)} placeholder="2020 - Presente" error={!!errors[`experience[${i}].date`]} />
-              </InputGroup>
+              <div className="grid grid-cols-2 gap-2">
+                <InputGroup label="From (year)" error={errors[`experience[${i}].startDate`]}>
+                  <Input
+                    value={item.startDate}
+                    onChange={(v) => updateField("startDate", sanitizeYearInput(v))}
+                    onBlur={() =>
+                      validateDateRangeFields(
+                        `experience[${i}].startDate`,
+                        item.startDate,
+                        `experience[${i}].endDate`,
+                        item.endDate
+                      )
+                    }
+                    placeholder="2019"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    error={!!errors[`experience[${i}].startDate`]}
+                  />
+                </InputGroup>
+                <InputGroup label="To (year)" error={errors[`experience[${i}].endDate`]}>
+                  <Input
+                    value={item.endDate}
+                    onChange={(v) => updateField("endDate", sanitizeYearInput(v))}
+                    onBlur={() =>
+                      validateDateRangeFields(
+                        `experience[${i}].startDate`,
+                        item.startDate,
+                        `experience[${i}].endDate`,
+                        item.endDate
+                      )
+                    }
+                    placeholder="2023"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    error={!!errors[`experience[${i}].endDate`]}
+                  />
+                </InputGroup>
+              </div>
               <InputGroup label="Description" error={errors[`experience[${i}].description`]}>
                 <Textarea value={item.description} onChange={(v) => updateField("description", v)} placeholder="Description of your role..." rows={2} error={!!errors[`experience[${i}].description`]} />
               </InputGroup>
@@ -412,34 +589,80 @@ function EducationSection({
   data,
   updateDraft,
   errors,
+  validateDateRangeFields,
 }: {
   data: CVData["education"];
   updateDraft: (data: Partial<CVData>) => void;
   errors: Record<string, string>;
+  validateDateRangeFields: (
+    startKey: string,
+    startValue: string,
+    endKey: string,
+    endValue: string
+  ) => void;
 }) {
-  const [educations, setEducations] = useState(data);
+  const [educations, setEducations] = useSyncedItems(data);
 
-  const sync = (updated: typeof educations) => {
+  const sync = (updated: EducationItem[]) => {
     setEducations(updated);
     updateDraft({ education: updated });
   };
 
-  const addEdu = () => sync([...educations, { id: generateId(), title: "", date: "" }]);
+  const addEdu = () =>
+    sync([
+      ...educations,
+      { id: generateId(), title: "", startDate: "", endDate: "" },
+    ]);
   const removeEdu = (id: string) => sync(educations.filter((e) => e.id !== id));
 
   return (
     <>
       <SectionTitle title="Education" icon={faGraduationCap} />
       {educations.map((edu, i) => (
-        <DynamicItem key={edu.id} item={edu} index={i} items={educations} setItems={setEducations} onRemove={removeEdu}
+        <DynamicItem key={edu.id} item={edu} items={educations} setItems={sync} onRemove={removeEdu}
           renderFields={(item, updateField) => (
             <>
               <InputGroup label="Degree & Institution" error={errors[`education[${i}].title`]}>
                 <Input value={item.title} onChange={(v) => updateField("title", v)} placeholder="Computer Science" error={!!errors[`education[${i}].title`]} />
               </InputGroup>
-              <InputGroup label="Period" error={errors[`education[${i}].date`]}>
-                <Input value={item.date} onChange={(v) => updateField("date", v)} placeholder="2018 - 2022" error={!!errors[`education[${i}].date`]} />
-              </InputGroup>
+              <div className="grid grid-cols-2 gap-2">
+                <InputGroup label="From (year)" error={errors[`education[${i}].startDate`]}>
+                  <Input
+                    value={item.startDate}
+                    onChange={(v) => updateField("startDate", sanitizeYearInput(v))}
+                    onBlur={() =>
+                      validateDateRangeFields(
+                        `education[${i}].startDate`,
+                        item.startDate,
+                        `education[${i}].endDate`,
+                        item.endDate
+                      )
+                    }
+                    placeholder="2018"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    error={!!errors[`education[${i}].startDate`]}
+                  />
+                </InputGroup>
+                <InputGroup label="To (year)" error={errors[`education[${i}].endDate`]}>
+                  <Input
+                    value={item.endDate}
+                    onChange={(v) => updateField("endDate", sanitizeYearInput(v))}
+                    onBlur={() =>
+                      validateDateRangeFields(
+                        `education[${i}].startDate`,
+                        item.startDate,
+                        `education[${i}].endDate`,
+                        item.endDate
+                      )
+                    }
+                    placeholder="2022"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    error={!!errors[`education[${i}].endDate`]}
+                  />
+                </InputGroup>
+              </div>
             </>
           )}
         />
@@ -458,7 +681,7 @@ function LanguagesSection({
   updateDraft: (data: Partial<CVData>) => void;
   errors: Record<string, string>;
 }) {
-  const [languages, setLanguages] = useState(data);
+  const [languages, setLanguages] = useSyncedItems(data);
 
   const sync = (updated: typeof languages) => {
     setLanguages(updated);
@@ -472,7 +695,7 @@ function LanguagesSection({
     <>
       <SectionTitle title="Languages" icon={faLanguage} />
       {languages.map((lang, i) => (
-        <DynamicItem key={lang.id} item={lang} index={i} items={languages} setItems={setLanguages} onRemove={removeLang}
+        <DynamicItem key={lang.id} item={lang} items={languages} setItems={sync} onRemove={removeLang}
           renderFields={(item, updateField) => (
             <InputGroup label="Language" error={errors[`languages[${i}].name`]}>
               <Input value={item.name} onChange={(v) => updateField("name", v)} placeholder="English (Advanced)" autoCapitalize error={!!errors[`languages[${i}].name`]} />
@@ -494,7 +717,7 @@ function CompetenciesSection({
   updateDraft: (data: Partial<CVData>) => void;
   errors: Record<string, string>;
 }) {
-  const [competencies, setCompetencies] = useState(data);
+  const [competencies, setCompetencies] = useSyncedItems(data);
 
   const sync = (updated: typeof competencies) => {
     setCompetencies(updated);
@@ -508,7 +731,7 @@ function CompetenciesSection({
     <>
       <SectionTitle title="Software Skills (1-5)" icon={faCogs} />
       {competencies.map((comp, i) => (
-        <DynamicItem key={comp.id} item={comp} index={i} items={competencies} setItems={setCompetencies} onRemove={removeComp}
+        <DynamicItem key={comp.id} item={comp} items={competencies} setItems={sync} onRemove={removeComp}
           renderFields={(item, updateField) => (
             <>
               <InputGroup label="Software" error={errors[`competencies[${i}].name`]}>
@@ -535,7 +758,7 @@ function SkillsSection({
   updateDraft: (data: Partial<CVData>) => void;
   errors: Record<string, string>;
 }) {
-  const [skills, setSkills] = useState(data);
+  const [skills, setSkills] = useSyncedItems(data);
 
   const sync = (updated: typeof skills) => {
     setSkills(updated);
@@ -549,7 +772,7 @@ function SkillsSection({
     <>
       <SectionTitle title="Soft Skills (1-5)" icon={faStar} />
       {skills.map((skill, i) => (
-        <DynamicItem key={skill.id} item={skill} index={i} items={skills} setItems={setSkills} onRemove={removeSkill}
+        <DynamicItem key={skill.id} item={skill} items={skills} setItems={sync} onRemove={removeSkill}
           renderFields={(item, updateField) => (
             <>
               <InputGroup label="Skill" error={errors[`skills[${i}].name`]}>
@@ -572,7 +795,13 @@ function SkillsSection({
 export default function CVCForm({ onDownloadPDF }: CVCFormProps) {
   const { cvData, draftData, hasDraft, updateDraft, applyDraft, resetDraft } = useCVC();
   const { addToast } = useToast();
-  const { errors, validateAll, validate, clearErrors } = useCVValidation();
+  const {
+    errors,
+    validateAll,
+    validate,
+    validateDateRangeFields,
+    clearErrors,
+  } = useCVValidation();
 
   const currentData = draftData || cvData;
 
@@ -605,8 +834,18 @@ export default function CVCForm({ onDownloadPDF }: CVCFormProps) {
 
         {/* Right column - Dynamic subforms */}
         <div className="space-y-5">
-          <ExperienceSection data={currentData.experience} updateDraft={updateDraft} errors={errors} />
-          <EducationSection data={currentData.education} updateDraft={updateDraft} errors={errors} />
+          <ExperienceSection
+            data={currentData.experience}
+            updateDraft={updateDraft}
+            errors={errors}
+            validateDateRangeFields={validateDateRangeFields}
+          />
+          <EducationSection
+            data={currentData.education}
+            updateDraft={updateDraft}
+            errors={errors}
+            validateDateRangeFields={validateDateRangeFields}
+          />
         </div>
       </div>
 

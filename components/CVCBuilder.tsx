@@ -1,15 +1,19 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { Fragment, useRef, useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalculator, faTimes, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faChevronDown, faChevronUp, faTimes, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { useCVC } from "@/context/CVCContext";
 import CVCForm from "./CVCForm";
+import { useToast } from "@/components/Toast";
+import { validateDateRange } from "@/types/cv";
 import CVCPreview from "./CVCPreview";
 import {
   CV_BUILDER_STEPS,
+  KLM_OPERATORS,
   calculateStepTime,
   calculateTotalTime,
+  getStepTotals,
   getTotals,
   formatTime,
   downloadKLMReport,
@@ -18,12 +22,24 @@ import {
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
 
+function formatCount(value: number | undefined): string | number {
+  return value && value > 0 ? value : "-";
+}
+
 export default function CVCBuilder() {
   const { cvData, draftData } = useCVC();
+  const { addToast } = useToast();
   const cvRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
   const [showKLM, setShowKLM] = useState(false);
+  const [expandedSteps, setExpandedSteps] = useState<number[]>([]);
+
+  const toggleStep = (step: number) => {
+    setExpandedSteps((current) =>
+      current.includes(step) ? current.filter((value) => value !== step) : [...current, step]
+    );
+  };
 
   const currentData = draftData || cvData;
 
@@ -42,6 +58,19 @@ export default function CVCBuilder() {
   }, []);
 
   const downloadPDF = async () => {
+    const hasInvalidDateRange =
+      currentData.experience.some(
+        (item) => Object.keys(validateDateRange(item.startDate, item.endDate)).length > 0
+      ) ||
+      currentData.education.some(
+        (item) => Object.keys(validateDateRange(item.startDate, item.endDate)).length > 0
+      );
+
+    if (hasInvalidDateRange) {
+      addToast("Please fix the work or education dates before downloading", "error");
+      return;
+    }
+
     const element = cvRef.current;
     if (!element || typeof window === "undefined") return;
 
@@ -200,15 +229,13 @@ export default function CVCBuilder() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td className="p-2 border font-medium">K</td><td className="p-2 border">Presionar una tecla</td><td className="p-2 border text-right">0.2</td></tr>
-                    <tr><td className="p-2 border font-medium">P</td><td className="p-2 border">Señalar o apuntar con un dispositivo de entrada</td><td className="p-2 border text-right">1.1</td></tr>
-                    <tr><td className="p-2 border font-medium">H</td><td className="p-2 border">Mover la mano de un dispositivo de entrada a otro</td><td className="p-2 border text-right">0.4</td></tr>
-                    <tr><td className="p-2 border font-medium">M</td><td className="p-2 border">Pensar en qué hacer a continuación</td><td className="p-2 border text-right">1.2</td></tr>
-                    <tr><td className="p-2 border font-medium">B</td><td className="p-2 border">Presionar Mouse</td><td className="p-2 border text-right">0.1</td></tr>
-                    <tr><td className="p-2 border font-medium">Date-Picker</td><td className="p-2 border">Entrada fecha tipo Date-Picker</td><td className="p-2 border text-right">6.81</td></tr>
-                    <tr><td className="p-2 border font-medium">Scrolling</td><td className="p-2 border">Mover scroll</td><td className="p-2 border text-right">3.96</td></tr>
-                    <tr><td className="p-2 border font-medium">D</td><td className="p-2 border">Dibujar</td><td className="p-2 border text-right">1.2</td></tr>
-                    <tr><td className="p-2 border font-medium">R</td><td className="p-2 border">Tiempo de Respuesta del Sistema</td><td className="p-2 border text-right">t</td></tr>
+                    {Object.entries(KLM_OPERATORS).map(([key, operator]) => (
+                      <tr key={key}>
+                        <td className="p-2 border font-medium">{key}</td>
+                        <td className="p-2 border">{operator.name}</td>
+                        <td className="p-2 border text-right">{key === "R" ? "t" : operator.time}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -216,71 +243,144 @@ export default function CVCBuilder() {
               {/* CV KLM Steps Table */}
               <div className="mb-6">
                 <h4 className="text-sm font-semibold mb-3 text-[var(--color-text)]">Cálculo KLM - Creación del Curriculum</h4>
-                <table className="w-full text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left p-2 border font-medium">Operador</th>
-                      <th className="text-left p-2 border font-medium">Dato</th>
-                      <th className="text-center p-2 border font-medium">K</th>
-                      <th className="text-center p-2 border font-medium">P</th>
-                      <th className="text-center p-2 border font-medium">H</th>
-                      <th className="text-center p-2 border font-medium">M</th>
-                      <th className="text-center p-2 border font-medium">B</th>
-                      <th className="text-right p-2 border font-medium">Tiempo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CV_BUILDER_STEPS.map((step) => (
-                      <tr key={step.step} className="hover:bg-gray-50">
-                        <td className="p-2 border">{step.action}</td>
-                        <td className="p-2 border text-gray-500">{step.data}</td>
-                        <td className="p-2 border text-center">{step.K || "-"}</td>
-                        <td className="p-2 border text-center">{step.P || "-"}</td>
-                        <td className="p-2 border text-center">{step.H || "-"}</td>
-                        <td className="p-2 border text-center">{step.M || "-"}</td>
-                        <td className="p-2 border text-center">{step.B || "-"}</td>
-                        <td className="p-2 border text-right font-medium">{calculateStepTime(step).toFixed(1)}s</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left p-2 border font-medium">Operador</th>
+                        <th className="text-left p-2 border font-medium">Dato</th>
+                        <th className="text-center p-2 border font-medium">K</th>
+                        <th className="text-center p-2 border font-medium">P</th>
+                        <th className="text-center p-2 border font-medium">H</th>
+                        <th className="text-center p-2 border font-medium">M</th>
+                        <th className="text-center p-2 border font-medium">B</th>
+                        <th className="text-center p-2 border font-medium">Scroll</th>
+                        <th className="text-center p-2 border font-medium">R</th>
+                        <th className="text-right p-2 border font-medium">Tiempo</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-100 font-semibold">
-                      <td className="p-2 border" colSpan={2}>TOTAL</td>
-                      <td className="p-2 border text-center">{klmTotals.K}</td>
-                      <td className="p-2 border text-center">{klmTotals.P}</td>
-                      <td className="p-2 border text-center">{klmTotals.H}</td>
-                      <td className="p-2 border text-center">{klmTotals.M}</td>
-                      <td className="p-2 border text-center">{klmTotals.B}</td>
-                      <td className="p-2 border text-right">{formatTime(klmTotal)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    </thead>
+                    <tbody>
+                      {CV_BUILDER_STEPS.map((step) => {
+                        const stepTotals = getStepTotals(step);
+                        const isExpanded = expandedSteps.includes(step.step);
+
+                        return (
+                          <Fragment key={step.step}>
+                            <tr className="hover:bg-gray-50">
+                              <td className="p-2 border">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleStep(step.step)}
+                                  className="flex items-center gap-2 text-left"
+                                  aria-expanded={isExpanded}
+                                >
+                                  <FontAwesomeIcon
+                                    icon={isExpanded ? faChevronUp : faChevronDown}
+                                    className="text-[9px] text-gray-400"
+                                  />
+                                  {step.action}
+                                </button>
+                              </td>
+                              <td className="p-2 border text-gray-500">{step.data}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.K)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.P)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.H)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.M)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.B)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.Scrolling)}</td>
+                              <td className="p-2 border text-center">{formatCount(stepTotals.R)}</td>
+                              <td className="p-2 border text-right font-medium">{calculateStepTime(step).toFixed(1)}s</td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td className="p-0 border bg-gray-50" colSpan={10}>
+                                  <div className="overflow-x-auto p-2">
+                                    <table className="w-full text-[10px] border-collapse bg-white">
+                                      <thead>
+                                        <tr className="bg-gray-100">
+                                          <th className="text-left p-1.5 border font-medium">Acción</th>
+                                          <th className="text-left p-1.5 border font-medium">Dato</th>
+                                          <th className="text-center p-1.5 border font-medium">K</th>
+                                          <th className="text-center p-1.5 border font-medium">P</th>
+                                          <th className="text-center p-1.5 border font-medium">H</th>
+                                          <th className="text-center p-1.5 border font-medium">M</th>
+                                          <th className="text-center p-1.5 border font-medium">B</th>
+                                          <th className="text-center p-1.5 border font-medium">Scroll</th>
+                                          <th className="text-center p-1.5 border font-medium">R</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {step.details.map((detail, index) => (
+                                          <tr key={`${step.step}-${index}`}>
+                                            <td className="p-1.5 border">{detail.action}</td>
+                                            <td className="p-1.5 border text-gray-500">{detail.data || ""}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.K)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.P)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.H)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.M)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.B)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.Scrolling)}</td>
+                                            <td className="p-1.5 border text-center">{formatCount(detail.counts.R)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-100 font-semibold">
+                        <td className="p-2 border" colSpan={2}>TOTAL</td>
+                        <td className="p-2 border text-center">{klmTotals.K}</td>
+                        <td className="p-2 border text-center">{klmTotals.P}</td>
+                        <td className="p-2 border text-center">{klmTotals.H}</td>
+                        <td className="p-2 border text-center">{klmTotals.M}</td>
+                        <td className="p-2 border text-center">{klmTotals.B}</td>
+                        <td className="p-2 border text-center">{klmTotals.Scrolling}</td>
+                        <td className="p-2 border text-center">{klmTotals.R}</td>
+                        <td className="p-2 border text-right">{formatTime(klmTotal)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
 
               {/* Summary */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-semibold mb-2 text-[var(--color-text)]">Resumen</h4>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
                   <div>
                     <span className="text-gray-500">Keystrokes (K)</span>
-                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.K} × 0.2s = {(klmTotals.K * 0.2).toFixed(1)}s</p>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.K} × {KLM_OPERATORS.K.time}s = {(klmTotals.K * KLM_OPERATORS.K.time).toFixed(1)}s</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Pointing (P)</span>
-                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.P} × 1.1s = {(klmTotals.P * 1.1).toFixed(1)}s</p>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.P} × {KLM_OPERATORS.P.time}s = {(klmTotals.P * KLM_OPERATORS.P.time).toFixed(1)}s</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Homing (H)</span>
-                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.H} × 0.4s = {(klmTotals.H * 0.4).toFixed(1)}s</p>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.H} × {KLM_OPERATORS.H.time}s = {(klmTotals.H * KLM_OPERATORS.H.time).toFixed(1)}s</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Mental (M)</span>
-                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.M} × 1.2s = {(klmTotals.M * 1.2).toFixed(1)}s</p>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.M} × {KLM_OPERATORS.M.time}s = {(klmTotals.M * KLM_OPERATORS.M.time).toFixed(1)}s</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Mouse (B)</span>
-                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.B} × 0.1s = {(klmTotals.B * 0.1).toFixed(1)}s</p>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.B} × {KLM_OPERATORS.B.time}s = {(klmTotals.B * KLM_OPERATORS.B.time).toFixed(1)}s</p>
                   </div>
+                  <div>
+                    <span className="text-gray-500">Scrolling</span>
+                    <p className="font-semibold text-[var(--color-text)]">{klmTotals.Scrolling} × {KLM_OPERATORS.Scrolling.time}s = {(klmTotals.Scrolling * KLM_OPERATORS.Scrolling.time).toFixed(1)}s</p>
+                  </div>
+                </div>
+                <div className="mt-2 text-[11px] text-gray-500">
+                  System response (R): {klmTotals.R} wait points — no fixed time.
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <span className="text-sm font-semibold text-[var(--color-text)]">

@@ -3,7 +3,7 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPhone, faEnvelope, faGlobe, faMapMarkerAlt, faCheckSquare, faBookmark, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { CVData } from "@/types/cv";
+import { CVData, DEFAULT_CV_PHOTO, formatDateRange } from "@/types/cv";
 
 interface CVCPreviewProps {
   cvData: CVData;
@@ -13,10 +13,9 @@ const CVCPreview = React.forwardRef<HTMLDivElement, CVCPreviewProps>(
   ({ cvData }, ref) => {
     const { personal, contact, experience, education, languages, competencies, skills } = cvData;
 
-    const getPhotoSrc = () => {
-      if (personal.photo) return personal.photo;
-      return "https://via.placeholder.com/120x120.png?text=Foto";
-    };
+    const getPhotoSrc = () =>
+      (typeof personal.photo === "string" ? personal.photo.trim() : "") ||
+      DEFAULT_CV_PHOTO;
 
     const fullName = `${personal.firstName} ${personal.lastName}`.trim();
 
@@ -122,7 +121,7 @@ const CVCPreview = React.forwardRef<HTMLDivElement, CVCPreviewProps>(
                     <div className="cv-item-content" style={{ flex: 1 }}>
                       <div className="cv-item-header" style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", marginBottom: "3px", color: "var(--color-text)" }}>
                         <span>{exp.title}</span>
-                        <span>{exp.date}</span>
+                        <span>{formatDateRange(exp.startDate, exp.endDate)}</span>
                       </div>
                       <div className="cv-item-desc" style={{ fontSize: "11px", lineHeight: 1.4, color: "var(--color-muted)" }}>
                         {exp.description}
@@ -146,7 +145,7 @@ const CVCPreview = React.forwardRef<HTMLDivElement, CVCPreviewProps>(
                     <div className="cv-item-content" style={{ flex: 1 }}>
                       <div className="cv-item-header" style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", marginBottom: "3px", color: "var(--color-text)" }}>
                         <span>{edu.title}</span>
-                        <span>{edu.date}</span>
+                        <span>{formatDateRange(edu.startDate, edu.endDate)}</span>
                       </div>
                     </div>
                   </div>
