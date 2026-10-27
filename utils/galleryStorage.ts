@@ -122,6 +122,7 @@ export function hydratePhoto(
   return {
     id: record.id,
     title: record.title,
+    description: record.description ?? "",
     image,
     order: record.order,
   };
@@ -142,6 +143,7 @@ export function createDefaultPhotos(): StoredPhotoRecord[] {
   return products.map((product, index) => ({
     id: `demo-photo-${product.id}`,
     title: product.name,
+    description: product.description,
     image: {
       kind: "url" as const,
       value: galleryUrlFromProduct(product.image),
@@ -152,6 +154,25 @@ export function createDefaultPhotos(): StoredPhotoRecord[] {
     createdAt: now,
     updatedAt: now,
   }));
+}
+
+export function backfillDemoDescriptions(
+  records: StoredPhotoRecord[]
+): StoredPhotoRecord[] {
+  const descriptions = new Map(
+    products.map((product) => [
+      `demo-photo-${product.id}`,
+      product.description,
+    ])
+  );
+  const updated: StoredPhotoRecord[] = [];
+  for (const record of records) {
+    if (record.description) continue;
+    const description = descriptions.get(record.id);
+    if (!description) continue;
+    updated.push({ ...record, description });
+  }
+  return updated;
 }
 
 export function sortPhotos(
@@ -178,6 +199,7 @@ export function buildPhotoRecord(
     return {
       ...existing,
       title: payload.title,
+      description: payload.description,
       image: payload.image ?? existing.image,
       updatedAt: now,
     };
@@ -190,6 +212,7 @@ export function buildPhotoRecord(
       .toString(36)
       .slice(2, 7)}`,
     title: payload.title,
+    description: payload.description,
     image: payload.image,
     order,
     createdAt: now,

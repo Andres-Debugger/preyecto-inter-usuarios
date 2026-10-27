@@ -12,6 +12,7 @@ export interface TangramFigureConfig {
   name: string;
   place: ([number, number, number] | null)[];
   sizes?: ([number, number] | null)[];
+  clips?: (string | null)[];
 }
 
 export interface TangramConfig {
@@ -94,6 +95,15 @@ export const DEFAULT_FIGURES: TangramFigureConfig[] = [
       [135, 75],
       [75, 75],
       [135, 135],
+    ],
+    clips: [
+      null,
+      null,
+      null,
+      null,
+      "polygon(0% 0%, 44.4% 0%, 100% 100%, 55.6% 100%)",
+      null,
+      null,
     ],
   },
 ];
