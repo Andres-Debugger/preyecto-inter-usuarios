@@ -122,4 +122,8 @@
   animation: slide-up 0.3s ease-out forwards;
 }
 
+html[data-page-loader="off"] .page-loading-overlay {
+  display: none !important;
+}
+
 /* Dark mode overrides — handled by PaletteStyles */

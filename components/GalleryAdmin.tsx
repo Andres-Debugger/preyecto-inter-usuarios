@@ -26,6 +26,7 @@ export default function GalleryAdmin() {
   const { addToast } = useToast();
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export default function GalleryAdmin() {
 
   const resetForm = () => {
     setTitle("");
+    setDescription("");
     setEditingId(null);
     setFile(null);
     if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
@@ -59,6 +61,7 @@ export default function GalleryAdmin() {
     if (!photo) return;
     setEditingId(id);
     setTitle(photo.title);
+    setDescription(photo.description);
     setFile(null);
     if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
     setFilePreviewUrl(null);
@@ -114,7 +117,10 @@ export default function GalleryAdmin() {
             height: crop.height,
           }
         : undefined;
-      await savePhoto({ title: trimmed, image }, editingId ?? undefined);
+      await savePhoto(
+        { title: trimmed, description: description.trim(), image },
+        editingId ?? undefined
+      );
       addToast(editingId ? "Photo updated" : "Photo saved", "success");
       resetForm();
     } catch (err) {
@@ -213,6 +219,18 @@ export default function GalleryAdmin() {
             placeholder="e.g. Eternal Band Ring"
             className="w-full px-4 py-3 text-sm bg-transparent outline-none border transition-colors focus:border-[var(--color-accent)]"
             style={{ ...inputStyle, fontFamily: "var(--font-title)" }}
+          />
+
+          <label className="block text-xs tracking-[0.12em] uppercase mt-5 mb-2" style={{ color: "var(--color-muted)" }}>
+            Description (optional)
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="e.g. 14k yellow gold with a hand-set diamond"
+            rows={3}
+            className="w-full px-4 py-3 text-sm bg-transparent outline-none border transition-colors focus:border-[var(--color-accent)] resize-y"
+            style={{ ...inputStyle, fontFamily: "var(--font-body)" }}
           />
         </div>
 
@@ -383,6 +401,11 @@ export default function GalleryAdmin() {
                   >
                     {photo.title}
                   </p>
+                  {photo.description && (
+                    <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>
+                      {photo.description}
+                    </p>
+                  )}
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--color-muted)" }}>
                     {photo.image.width && photo.image.height
                       ? `${photo.image.width}×${photo.image.height}`

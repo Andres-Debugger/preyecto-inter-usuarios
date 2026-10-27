@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VideoAdmin from "@/components/VideoAdmin";
 import GalleryAdmin from "@/components/GalleryAdmin";
+import LoaderToggle from "@/components/LoaderToggle";
 
 type AdminTab = "video" | "gallery";
 
@@ -33,15 +34,20 @@ export default function AdminPage() {
       <Header />
       <main className="min-h-screen pt-24 pb-16" style={{ backgroundColor: "var(--color-bg)" }}>
         <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <h1
-            className="text-[clamp(2rem,4vw,3.5rem)] mb-2"
-            style={{ fontFamily: "var(--font-title)", color: "var(--color-text)" }}
-          >
-            Content Manager
-          </h1>
-          <p className="text-sm mb-8" style={{ color: "var(--color-muted)" }}>
-            Configure the home page films and gallery photos.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+            <div>
+              <h1
+                className="text-[clamp(2rem,4vw,3.5rem)] mb-2"
+                style={{ fontFamily: "var(--font-title)", color: "var(--color-text)" }}
+              >
+                Content Manager
+              </h1>
+              <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+                Configure the home page films and gallery photos.
+              </p>
+            </div>
+            <LoaderToggle />
+          </div>
 
           <div className="flex items-center gap-6 mb-10 border-b" style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)" }}>
             {TABS.map((t) => {

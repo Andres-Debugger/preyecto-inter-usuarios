@@ -298,6 +298,14 @@ export default function GalleryCarousel() {
                   >
                     {photo.title}
                   </p>
+                  {photo.description && (
+                    <p
+                      className="mt-1 text-xs leading-relaxed line-clamp-2"
+                      style={{ color: "var(--color-muted)", fontFamily: "var(--font-body)" }}
+                    >
+                      {photo.description}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

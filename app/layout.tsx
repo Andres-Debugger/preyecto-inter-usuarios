@@ -10,6 +10,9 @@ import { VideoProvider } from "@/context/VideoContext";
 import { GalleryProvider } from "@/context/GalleryContext";
 import PaletteStyles from "@/components/PaletteStyles";
 import PageTransition from "@/components/PageTransition";
+import { PAGE_LOADER_STORAGE_KEY } from "@/utils/loaderPreference";
+
+const loaderPreferenceScript = `try{if(localStorage.getItem('${PAGE_LOADER_STORAGE_KEY}')==='off'){document.documentElement.dataset.pageLoader='off'}}catch(e){}`;
 
 export const metadata: Metadata = {
   title: "Brillo & Co | Fine Jewelry",
@@ -23,7 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: loaderPreferenceScript }} />
+      </head>
       <body className="min-h-screen">
         <PaletteProvider>
           <TypographyProvider>
