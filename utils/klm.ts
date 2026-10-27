@@ -17,18 +17,38 @@ export const KLM_OPERATORS = {
 
 export type OperatorType = keyof typeof KLM_OPERATORS;
 
-export interface KLMStep {
-  step: number;
-  action: string;
-  data: string;
+export interface KLMCounts {
   K: number;
   P: number;
   H: number;
   M: number;
   B: number;
+  Scrolling: number;
+  R: number;
 }
 
-// Alejandro Torres CV - exact data from reference image
+export interface KLMDetail {
+  action: string;
+  data?: string;
+  counts: Partial<KLMCounts>;
+}
+
+export interface KLMStep {
+  step: number;
+  action: string;
+  data: string;
+  details: KLMDetail[];
+}
+
+type Device = "mouse" | "keyboard";
+
+interface DetailInput {
+  action: string;
+  data?: string;
+  device?: Device;
+  counts: Partial<KLMCounts>;
+}
+
 const ALEJANDRO_CV = {
   firstName: "Alejandro",
   lastName: "Torres",
@@ -39,160 +59,300 @@ const ALEJANDRO_CV = {
   web: "www.unsitioincreible.es",
   location: "Calle Cualquiera 123, Cualquier Lugar",
   experience: [
-    { inst: "Multinacional González", period: "2019 - 2023", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
-    { inst: "Álvarez y asociados", period: "2015 - 2019", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
-    { inst: "Industrias Ariova", period: "2014 - 2015", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
-    { inst: "Rimberio y asociados", period: "2012 - 2014", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
+    { inst: "Multinacional González", startDate: "2019", endDate: "2023", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
+    { inst: "Álvarez y asociados", startDate: "2015", endDate: "2019", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
+    { inst: "Industrias Ariova", startDate: "2014", endDate: "2015", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
+    { inst: "Rimberio y asociados", startDate: "2012", endDate: "2014", desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sit amet quam rhoncus, egestas dui eget, malesuada justo. Ut aliquam augue." },
   ],
   education: [
-    { inst: "Universidad Ensigna", period: "2018 - 2023", degree: "Ingeniería en sistemas" },
-    { inst: "Universidad Ensigna", period: "2012 - 2018", degree: "Programación web" },
+    { title: "Universidad Ensigna - Ingeniería en sistemas", startDate: "2018", endDate: "2023" },
+    { title: "Universidad Ensigna - Programación web", startDate: "2012", endDate: "2018" },
   ],
   languages: ["Español", "Portugués", "Inglés"],
   competencies: ["Software 01", "Software 02", "Software 03", "Software 04", "Software 05"],
   skills: ["Liderazgo", "Creatividad", "Análisis crítico", "Eficiencia"],
 };
 
-// Helper: count chars in a string
 const chars = (s: string) => s.length;
 
-// Helper: total chars for experience entries
-const expChars = ALEJANDRO_CV.experience.reduce(
-  (acc, e) => ({
-    inst: acc.inst + chars(e.inst),
-    period: acc.period + chars(e.period),
-    desc: acc.desc + chars(e.desc),
-  }),
-  { inst: 0, period: 0, desc: 0 }
+const expTextChars = ALEJANDRO_CV.experience.reduce(
+  (total, entry) => total + chars(entry.inst) + chars(entry.desc),
+  0
 );
 
-// Helper: total chars for education entries
-const eduChars = ALEJANDRO_CV.education.reduce(
-  (acc, e) => ({
-    inst: acc.inst + chars(e.inst),
-    period: acc.period + chars(e.period),
-    degree: acc.degree + chars(e.degree),
-  }),
-  { inst: 0, period: 0, degree: 0 }
+const expYearChars = ALEJANDRO_CV.experience.reduce(
+  (total, entry) => total + chars(entry.startDate) + chars(entry.endDate),
+  0
 );
 
-// Helper: total chars for languages
-const langChars = ALEJANDRO_CV.languages.reduce((acc, l) => acc + chars(l), 0);
+const eduTextChars = ALEJANDRO_CV.education.reduce(
+  (total, entry) => total + chars(entry.title),
+  0
+);
 
-// Helper: total chars for competencies
-const compChars = ALEJANDRO_CV.competencies.reduce((acc, c) => acc + chars(c), 0);
+const eduYearChars = ALEJANDRO_CV.education.reduce(
+  (total, entry) => total + chars(entry.startDate) + chars(entry.endDate),
+  0
+);
 
-// Helper: total chars for skills
-const skillChars = ALEJANDRO_CV.skills.reduce((acc, s) => acc + chars(s), 0);
+const langChars = ALEJANDRO_CV.languages.reduce((total, language) => total + chars(language), 0);
+const compChars = ALEJANDRO_CV.competencies.reduce((total, competency) => total + chars(competency), 0);
+const skillChars = ALEJANDRO_CV.skills.reduce((total, skill) => total + chars(skill), 0);
 
-// Total personal data chars
-const personalChars = chars(ALEJANDRO_CV.firstName) + chars(ALEJANDRO_CV.lastName) + chars(ALEJANDRO_CV.title) + chars(ALEJANDRO_CV.profile);
+const personalChars =
+  chars(ALEJANDRO_CV.firstName) +
+  chars(ALEJANDRO_CV.lastName) +
+  chars(ALEJANDRO_CV.title) +
+  chars(ALEJANDRO_CV.profile);
 
-// Total contact chars
-const contactChars = chars(ALEJANDRO_CV.phone) + chars(ALEJANDRO_CV.email) + chars(ALEJANDRO_CV.web) + chars(ALEJANDRO_CV.location);
+const contactChars =
+  chars(ALEJANDRO_CV.phone) +
+  chars(ALEJANDRO_CV.email) +
+  chars(ALEJANDRO_CV.web) +
+  chars(ALEJANDRO_CV.location);
 
-/**
- * KLM Steps for creating Alejandro Torres' CV.
- * Each step groups high-level actions with aggregated operator counts.
- *
- * K = keystrokes (characters typed)
- * P = pointing/clicking actions
- * H = homing (keyboard↔mouse transitions)
- * M = mental preparation
- * B = mouse button presses
- */
-export const CV_BUILDER_STEPS: KLMStep[] = [
-  {
-    step: 1,
-    action: "Ir a Configuración CV",
-    data: "Navegación",
-    K: 0, P: 1, H: 0, M: 1, B: 1,
-  },
-  {
-    step: 2,
-    action: "Configurar foto de perfil",
-    data: "Foto URL",
-    K: 0, P: 1, H: 0, M: 0, B: 0,
-  },
-  {
-    step: 3,
-    action: "Ingresar datos personales",
-    data: `${ALEJANDRO_CV.firstName} ${ALEJANDRO_CV.lastName}, ${ALEJANDRO_CV.title}, Perfil (${chars(ALEJANDRO_CV.profile)} chars)`,
-    K: personalChars, P: 1, H: 3, M: 0, B: 1,
-  },
-  {
-    step: 4,
-    action: "Ingresar datos de contacto",
-    data: `Tel, Email, Web, Dirección (${contactChars} chars)`,
-    K: contactChars, P: 1, H: 3, M: 0, B: 1,
-  },
-  {
-    step: 5,
-    action: "Ingresar experiencia laboral",
-    data: `${ALEJANDRO_CV.experience.length} entradas (${expChars.inst + expChars.period + expChars.desc} chars)`,
-    K: expChars.inst + expChars.period + expChars.desc,
-    P: ALEJANDRO_CV.experience.length * 2,  // Add button + slider for each
-    H: ALEJANDRO_CV.experience.length * 2,
-    M: 0,
-    B: ALEJANDRO_CV.experience.length,
-  },
-  {
-    step: 6,
-    action: "Ingresar formación académica",
-    data: `${ALEJANDRO_CV.education.length} entradas (${eduChars.inst + eduChars.period + eduChars.degree} chars)`,
-    K: eduChars.inst + eduChars.period + eduChars.degree,
-    P: ALEJANDRO_CV.education.length * 2,
-    H: ALEJANDRO_CV.education.length * 2,
-    M: 0,
-    B: ALEJANDRO_CV.education.length,
-  },
-  {
-    step: 7,
-    action: "Ingresar idiomas",
-    data: `${ALEJANDRO_CV.languages.length} idiomas (${langChars} chars)`,
-    K: langChars,
-    P: ALEJANDRO_CV.languages.length,
-    H: 0,
-    M: 0,
-    B: ALEJANDRO_CV.languages.length,
-  },
-  {
-    step: 8,
-    action: "Ingresar competencias",
-    data: `${ALEJANDRO_CV.competencies.length} software + nivel (${compChars} chars)`,
-    K: compChars,
-    P: ALEJANDRO_CV.competencies.length * 3, // Add + type + slider
-    H: 0,
-    M: 0,
-    B: ALEJANDRO_CV.competencies.length,
-  },
-  {
-    step: 9,
-    action: "Ingresar habilidades",
-    data: `${ALEJANDRO_CV.skills.length} skills + nivel (${skillChars} chars)`,
-    K: skillChars,
-    P: ALEJANDRO_CV.skills.length * 3, // Add + type + slider
-    H: 0,
-    M: 0,
-    B: ALEJANDRO_CV.skills.length,
-  },
-  {
-    step: 10,
-    action: "Revisar y exportar PDF",
-    data: "Apply + Download",
-    K: 0, P: 2, H: 0, M: 2, B: 1,
-  },
+const click = (target: string): DetailInput => ({
+  action: `Mover el mouse y hacer clic en ${target}`,
+  device: "mouse",
+  counts: { P: 1, B: 1 },
+});
+
+const typeText = (target: string, count: number): DetailInput => ({
+  action: `Escribir en ${target}`,
+  data: `${count} caracteres`,
+  device: "keyboard",
+  counts: { K: count },
+});
+
+const pressEnter = (target: string): DetailInput => ({
+  action: `Presionar Enter para ${target}`,
+  device: "keyboard",
+  counts: { K: 1 },
+});
+
+const think = (target: string): DetailInput => ({
+  action: `Pensar en ${target}`,
+  counts: { M: 1 },
+});
+
+const wait = (target: string): DetailInput => ({
+  action: `Esperar ${target}`,
+  counts: { R: 1 },
+});
+
+const scroll = (target: string, count = 1): DetailInput => ({
+  action: `Desplazarse ${target}`,
+  device: "mouse",
+  counts: { Scrolling: count },
+});
+
+function buildDetails(startDevice: Device, actions: DetailInput[]): KLMDetail[] {
+  let device = startDevice;
+  const details: KLMDetail[] = [];
+
+  for (const action of actions) {
+    if (action.device && action.device !== device) {
+      details.push({
+        action: `Mover la mano al ${action.device === "mouse" ? "mouse" : "teclado"}`,
+        counts: { H: 1 },
+      });
+      device = action.device;
+    }
+
+    if (Object.keys(action.counts).length > 0) {
+      details.push({
+        action: action.action,
+        data: action.data,
+        counts: action.counts,
+      });
+    }
+  }
+
+  return details;
+}
+
+function makeStep(
+  step: number,
+  action: string,
+  data: string,
+  startDevice: Device,
+  actions: DetailInput[]
+): KLMStep {
+  return {
+    step,
+    action,
+    data,
+    details: buildDetails(startDevice, actions),
+  };
+}
+
+const personalFields = [
+  { label: "First Name", count: chars(ALEJANDRO_CV.firstName) },
+  { label: "Last Name", count: chars(ALEJANDRO_CV.lastName) },
+  { label: "Professional Title", count: chars(ALEJANDRO_CV.title) },
+  { label: "Profile Description", count: chars(ALEJANDRO_CV.profile) },
 ];
 
-// --- Calculation Functions ---
+const contactFields = [
+  { label: "Phone", count: chars(ALEJANDRO_CV.phone) },
+  { label: "Email", count: chars(ALEJANDRO_CV.email) },
+  { label: "Website", count: chars(ALEJANDRO_CV.web) },
+  { label: "Location", count: chars(ALEJANDRO_CV.location) },
+];
+
+const experienceActions: DetailInput[] = [think("los datos de experiencia")];
+ALEJANDRO_CV.experience.forEach((entry, index) => {
+  const label = `experiencia ${index + 1}`;
+  experienceActions.push(
+    click(`Add Experience (${label})`),
+    click(`Position & Institution (${label})`),
+    typeText(`Position & Institution (${label})`, chars(entry.inst)),
+    click(`From (${label})`),
+    typeText(`From (${label})`, chars(entry.startDate)),
+    click(`To (${label})`),
+    typeText(`To (${label})`, chars(entry.endDate)),
+    click(`Description (${label})`),
+    typeText(`Description (${label})`, chars(entry.desc))
+  );
+});
+
+const educationActions: DetailInput[] = [think("los datos de formación")];
+ALEJANDRO_CV.education.forEach((entry, index) => {
+  const label = `formación ${index + 1}`;
+  educationActions.push(
+    click(`Add Education (${label})`),
+    click(`Degree & Institution (${label})`),
+    typeText(`Degree & Institution (${label})`, chars(entry.title)),
+    click(`From (${label})`),
+    typeText(`From (${label})`, chars(entry.startDate)),
+    click(`To (${label})`),
+    typeText(`To (${label})`, chars(entry.endDate))
+  );
+});
+
+const languageActions: DetailInput[] = [
+  think("los idiomas"),
+  scroll("hasta la sección de idiomas"),
+];
+ALEJANDRO_CV.languages.forEach((language, index) => {
+  const label = `idioma ${index + 1}`;
+  languageActions.push(
+    click(`Add Language (${label})`),
+    click(`Language (${label})`),
+    typeText(`Language (${label})`, chars(language))
+  );
+});
+
+const competencyActions: DetailInput[] = [think("los software y sus niveles")];
+ALEJANDRO_CV.competencies.forEach((competency, index) => {
+  const label = `software ${index + 1}`;
+  competencyActions.push(
+    click(`Add Competency (${label})`),
+    click(`Software (${label})`),
+    typeText(`Software (${label})`, chars(competency)),
+    click(`Level slider (${label})`)
+  );
+});
+
+const skillActions: DetailInput[] = [think("las habilidades y sus niveles")];
+ALEJANDRO_CV.skills.forEach((skill, index) => {
+  const label = `habilidad ${index + 1}`;
+  skillActions.push(
+    click(`Add Skill (${label})`),
+    click(`Skill (${label})`),
+    typeText(`Skill (${label})`, chars(skill)),
+    click(`Level slider (${label})`)
+  );
+});
+
+export const CV_BUILDER_STEPS: KLMStep[] = [
+  makeStep(1, "Ir a Configuración CV", "MENU → Settings → scroll (2)", "mouse", [
+    think("ubicar la sección de CV"),
+    click("MENU"),
+    click("Settings"),
+    wait("la carga de Settings"),
+    scroll("hasta CV Builder", 2),
+  ]),
+  makeStep(2, "Configurar foto de perfil", "Upload photo → archivo → Enter", "mouse", [
+    think("elegir la foto"),
+    click("Upload photo"),
+    wait("abrir el diálogo de archivo"),
+    click("archivo de imagen"),
+    pressEnter("confirmar la selección"),
+    wait("procesar la imagen"),
+  ]),
+  makeStep(3, "Ingresar datos personales", `4 campos (${personalChars} caracteres)`, "keyboard", [
+    think("completar los datos personales"),
+    ...personalFields.flatMap((field) => [
+      click(`campo ${field.label}`),
+      typeText(field.label, field.count),
+    ]),
+  ]),
+  makeStep(4, "Ingresar datos de contacto", `4 campos (${contactChars} caracteres)`, "keyboard", [
+    think("completar los datos de contacto"),
+    ...contactFields.flatMap((field) => [
+      click(`campo ${field.label}`),
+      typeText(field.label, field.count),
+    ]),
+  ]),
+  makeStep(
+    5,
+    "Ingresar experiencia laboral",
+    `${ALEJANDRO_CV.experience.length} entradas (${expTextChars} caracteres + ${expYearChars} dígitos)`,
+    "keyboard",
+    experienceActions
+  ),
+  makeStep(
+    6,
+    "Ingresar formación académica",
+    `${ALEJANDRO_CV.education.length} entradas (${eduTextChars} caracteres + ${eduYearChars} dígitos)`,
+    "keyboard",
+    educationActions
+  ),
+  makeStep(7, "Ingresar idiomas", `${ALEJANDRO_CV.languages.length} idiomas (${langChars} caracteres)`, "keyboard", languageActions),
+  makeStep(8, "Ingresar competencias", `${ALEJANDRO_CV.competencies.length} software (${compChars} caracteres + ${ALEJANDRO_CV.competencies.length} sliders)`, "keyboard", competencyActions),
+  makeStep(9, "Ingresar habilidades", `${ALEJANDRO_CV.skills.length} skills (${skillChars} caracteres + ${ALEJANDRO_CV.skills.length} sliders)`, "mouse", skillActions),
+  makeStep(10, "Revisar y exportar PDF", "Apply + Download", "mouse", [
+    think("revisar el CV"),
+    scroll("hasta las acciones"),
+    click("Apply Changes"),
+    wait("la validación"),
+    think("confirmar la descarga"),
+    click("Download PDF"),
+    wait("generar y descargar el PDF"),
+  ]),
+];
+
+const emptyCounts = (): KLMCounts => ({
+  K: 0,
+  P: 0,
+  H: 0,
+  M: 0,
+  B: 0,
+  Scrolling: 0,
+  R: 0,
+});
+
+export function getStepTotals(step: KLMStep): KLMCounts {
+  return step.details.reduce((totals, detail) => {
+    (Object.keys(totals) as (keyof KLMCounts)[]).forEach((operator) => {
+      totals[operator] += detail.counts[operator] ?? 0;
+    });
+    return totals;
+  }, emptyCounts());
+}
 
 export function calculateStepTime(step: KLMStep): number {
+  const totals = getStepTotals(step);
+
   return (
-    step.K * KLM_OPERATORS.K.time +
-    step.P * KLM_OPERATORS.P.time +
-    step.H * KLM_OPERATORS.H.time +
-    step.M * KLM_OPERATORS.M.time +
-    step.B * KLM_OPERATORS.B.time
+    totals.K * KLM_OPERATORS.K.time +
+    totals.P * KLM_OPERATORS.P.time +
+    totals.H * KLM_OPERATORS.H.time +
+    totals.M * KLM_OPERATORS.M.time +
+    totals.B * KLM_OPERATORS.B.time +
+    totals.Scrolling * KLM_OPERATORS.Scrolling.time +
+    totals.R * KLM_OPERATORS.R.time
   );
 }
 
@@ -200,17 +360,14 @@ export function calculateTotalTime(steps: KLMStep[]): number {
   return steps.reduce((total, step) => total + calculateStepTime(step), 0);
 }
 
-export function getTotals(steps: KLMStep[]) {
-  return steps.reduce(
-    (acc, step) => ({
-      K: acc.K + step.K,
-      P: acc.P + step.P,
-      H: acc.H + step.H,
-      M: acc.M + step.M,
-      B: acc.B + step.B,
-    }),
-    { K: 0, P: 0, H: 0, M: 0, B: 0 }
-  );
+export function getTotals(steps: KLMStep[]): KLMCounts {
+  return steps.reduce((totals, step) => {
+    const stepTotals = getStepTotals(step);
+    (Object.keys(totals) as (keyof KLMCounts)[]).forEach((operator) => {
+      totals[operator] += stepTotals[operator];
+    });
+    return totals;
+  }, emptyCounts());
 }
 
 export function formatTime(seconds: number): string {
@@ -220,43 +377,77 @@ export function formatTime(seconds: number): string {
   return `${mins}m ${secs}s`;
 }
 
-// --- Excel Export (Format from Image 2) ---
+function escapeCsv(value: string | number): string {
+  const text = String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function csvRow(values: (string | number)[]): string {
+  return values.map(escapeCsv).join(",");
+}
+
+function displayCount(value: number | undefined): string | number {
+  return value && value > 0 ? value : "-";
+}
 
 export function generateKLMReport(steps: KLMStep[]): string {
   const totals = getTotals(steps);
   const totalTime = calculateTotalTime(steps);
-
   const lines: string[] = [];
 
-  // Headers (exact format from Image 2)
-  lines.push("Operador,Dato,K,P,H,M,B");
+  lines.push(csvRow(["Operador", "Dato", "K", "P", "H", "M", "B", "Scrolling", "R"]));
 
-  // Data rows
   for (const step of steps) {
-    const row = [
-      step.action,
-      step.data,
-      step.K || "-",
-      step.P || "-",
-      step.H || "-",
-      step.M || "-",
-      step.B || "-",
-    ];
-    lines.push(row.join(","));
+    const stepTotals = getStepTotals(step);
+    lines.push(
+      csvRow([
+        step.action,
+        step.data,
+        displayCount(stepTotals.K),
+        displayCount(stepTotals.P),
+        displayCount(stepTotals.H),
+        displayCount(stepTotals.M),
+        displayCount(stepTotals.B),
+        displayCount(stepTotals.Scrolling),
+        displayCount(stepTotals.R),
+      ])
+    );
   }
 
-  // Totals row
   lines.push("");
-  lines.push(`TOTAL,,${totals.K},${totals.P},${totals.H},${totals.M},${totals.B}`);
-  lines.push(`Tiempo Total (segundos),,${totalTime.toFixed(2)}`);
-  lines.push(`Tiempo Total (formateado),,${formatTime(totalTime)}`);
+  lines.push(csvRow(["TOTAL", "", totals.K, totals.P, totals.H, totals.M, totals.B, totals.Scrolling, totals.R]));
+  lines.push(csvRow(["Tiempo Total (segundos)", "", totalTime.toFixed(2)]));
+  lines.push(csvRow(["Tiempo Total (formateado)", "", formatTime(totalTime)]));
 
-  // Operator reference
   lines.push("");
-  lines.push("Referencia de Operadores");
-  lines.push("Operador,Acción,Tiempo (seg)");
-  for (const [key, op] of Object.entries(KLM_OPERATORS)) {
-    lines.push(`${key},${op.name},${op.time}`);
+  lines.push(csvRow(["Detalle de subacciones"]));
+  lines.push(csvRow(["Paso", "Acción", "Dato", "K", "P", "H", "M", "B", "Scrolling", "R"]));
+
+  for (const step of steps) {
+    for (const detail of step.details) {
+      lines.push(
+        csvRow([
+          step.step,
+          detail.action,
+          detail.data ?? "",
+          displayCount(detail.counts.K),
+          displayCount(detail.counts.P),
+          displayCount(detail.counts.H),
+          displayCount(detail.counts.M),
+          displayCount(detail.counts.B),
+          displayCount(detail.counts.Scrolling),
+          displayCount(detail.counts.R),
+        ])
+      );
+    }
+  }
+
+  lines.push("");
+  lines.push(csvRow(["Referencia de Operadores"]));
+  lines.push(csvRow(["Operador", "Acción", "Tiempo (seg)"]));
+
+  for (const [key, operator] of Object.entries(KLM_OPERATORS)) {
+    lines.push(csvRow([key, operator.name, key === "R" ? "t" : operator.time]));
   }
 
   return lines.join("\n");

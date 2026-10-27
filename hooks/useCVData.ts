@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { capitalizeWords, CVData, validateField, validateCV } from "@/types/cv";
+import {
+  capitalizeWords,
+  CVData,
+  validateDateRange,
+  validateField,
+  validateCV,
+} from "@/types/cv";
 
 export function useCVData() {
   const cursorRefs = useRef<Map<HTMLInputElement | HTMLTextAreaElement, number>>(new Map());
@@ -67,6 +73,27 @@ export function useCVValidation() {
     return error;
   }, []);
 
+  const validateDateRangeFields = useCallback(
+    (
+      startKey: string,
+      startValue: string,
+      endKey: string,
+      endValue: string
+    ) => {
+      const result = validateDateRange(startValue, endValue);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[startKey];
+        delete next[endKey];
+        if (result.startDate) next[startKey] = result.startDate;
+        if (result.endDate) next[endKey] = result.endDate;
+        return next;
+      });
+      return result;
+    },
+    []
+  );
+
   const validateAll = useCallback((data: CVData): boolean => {
     const allErrors = validateCV(data);
     setErrors(allErrors);
@@ -87,5 +114,13 @@ export function useCVValidation() {
 
   const isValid = Object.keys(errors).length === 0;
 
-  return { errors, validate, validateAll, clearErrors, clearError, isValid };
+  return {
+    errors,
+    validate,
+    validateDateRangeFields,
+    validateAll,
+    clearErrors,
+    clearError,
+    isValid,
+  };
 }
