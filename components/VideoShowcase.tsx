@@ -63,7 +63,7 @@ export default function VideoShowcase() {
         <FadeIn>
           <div className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className="tracking-[0.25em] uppercase mb-3 font-medium" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-muted)" }}>
+              <p data-typography="subtitle" className="tracking-[0.25em] uppercase mb-3 font-medium" style={{ fontSize: "var(--size-subtitle)", fontFamily: "var(--font-body)", color: "var(--color-muted)" }}>
                 Our Story in Motion
               </p>
               <h2 className="section-title-editorial">THE FILM</h2>

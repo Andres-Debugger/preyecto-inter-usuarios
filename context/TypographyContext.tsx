@@ -33,6 +33,7 @@ interface TypographyContextType {
   setPreviewPreset: (preset: TypographyPreset | null) => void;
   updateDraftFont: (type: "title" | "body", name: string, data: string) => void;
   updateDraftSizes: (title: number, subtitle: number, paragraph: number) => void;
+  setDraftConfig: (config: TypographyConfig) => void;
   applyDraft: () => void;
   resetDraft: () => void;
   hasDraft: boolean;
@@ -126,6 +127,7 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
   const updatePreset = useCallback((id: string, name: string, cfg: TypographyConfig) => {
     setPresets((prev) => prev.map((p) => (p.id === id ? { ...p, name, config: { ...cfg } } : p)));
     setActivePreset((prev) => (prev.id === id ? { ...prev, name, config: { ...cfg } } : prev));
+    setPreviewPreset((prev) => (prev?.id === id ? { ...prev, name, config: { ...cfg } } : prev));
   }, []);
 
   const deletePreset = useCallback((id: string) => {
@@ -138,19 +140,16 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
       if (prev.id === id) return DEFAULT_PRESET;
       return prev;
     });
+    setPreviewPreset((prev) => (prev?.id === id ? null : prev));
   }, []);
 
   const activatePreset = useCallback((id: string) => {
-    setPresets((prev) => {
-      const found = prev.find((p) => p.id === id);
-      if (found) {
-        setActivePreset(found);
-        setPreviewPreset(null);
-        setDraftConfig(null);
-      }
-      return prev;
-    });
-  }, []);
+    const found = presets.find((preset) => preset.id === id);
+    if (!found) return;
+    setActivePreset(found);
+    setPreviewPreset(null);
+    setDraftConfig(null);
+  }, [presets]);
 
   const searchPresets = useCallback((query: string): TypographyPreset[] => {
     if (!query.trim()) return presets;
@@ -188,6 +187,10 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
     setDraftConfig(null);
   }, []);
 
+  const setDraftConfigValue = useCallback((cfg: TypographyConfig) => {
+    setDraftConfig({ ...cfg });
+  }, []);
+
   return (
     <TypographyContext.Provider
       value={{
@@ -204,6 +207,7 @@ export function TypographyProvider({ children }: { children: React.ReactNode }) 
         setPreviewPreset,
         updateDraftFont,
         updateDraftSizes,
+        setDraftConfig: setDraftConfigValue,
         applyDraft,
         resetDraft,
         hasDraft: draftConfig !== null,

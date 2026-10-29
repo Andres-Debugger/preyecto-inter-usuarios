@@ -127,3 +127,42 @@ html[data-page-loader="off"] .page-loading-overlay {
 }
 
 /* Dark mode overrides — handled by PaletteStyles */
+
+/* Global typography enforcement.
+   Roles: semantic headings and explicit title markers = title,
+   explicit subtitle markers = subtitle, everything else = paragraph. */
+body :not([data-typography-exempt], [data-typography-exempt] *, svg, svg *) {
+  font-size: var(--size-paragraph, 14px) !important;
+}
+
+body [data-typography="subtitle"]:not([data-typography-exempt], [data-typography-exempt] *) {
+  font-size: var(--size-subtitle, 18px) !important;
+}
+
+body [data-typography="subtitle"]:not([data-typography-exempt], [data-typography-exempt] *)
+  :not([data-typography-exempt], [data-typography-exempt] *, svg, svg *) {
+  font-size: var(--size-subtitle, 18px) !important;
+}
+
+body :is(h1, h2, h3, h4, h5, h6, [data-typography="title"]):not([data-typography-exempt], [data-typography-exempt] *) {
+  font-size: var(--size-title, 48px) !important;
+}
+
+body :is(h1, h2, h3, h4, h5, h6, [data-typography="title"]):not([data-typography-exempt], [data-typography-exempt] *)
+  :not([data-typography-exempt], [data-typography-exempt] *, svg, svg *) {
+  font-size: var(--size-title, 48px) !important;
+}
+
+/* Control surfaces (Settings, Admin, Tangrams) keep their UI stable
+   regardless of the typography preset. Overriding the custom properties
+   here also freezes inline var(--size-*) / var(--font-*) usages in the
+   shared header/footer. */
+[data-typography-exempt][data-typography-ui] {
+  --font-title: "Playfair Display", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --size-title: 48px;
+  --size-subtitle: 18px;
+  --size-paragraph: 14px;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+}

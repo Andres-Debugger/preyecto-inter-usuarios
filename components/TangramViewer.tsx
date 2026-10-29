@@ -54,7 +54,7 @@ export default function TangramViewer({ autoPlay = false }: TangramViewerProps) 
   return (
     <div className="flex flex-col items-center justify-center gap-8 w-full" style={{ minHeight: autoPlay ? "100vh" : "calc(100vh - 200px)" }}>
       {!autoPlay && (
-        <div className="select-none absolute pointer-events-none" style={{ color: colors[0], opacity: 0.12, fontFamily: "var(--font-title)", fontSize: "clamp(4rem, 15vw, 10rem)", fontWeight: 700, lineHeight: 1, top: "15%", right: "10%" }}>
+        <div data-typography-exempt className="select-none absolute pointer-events-none" style={{ color: colors[0], opacity: 0.12, fontFamily: "var(--font-title)", fontSize: "clamp(4rem, 15vw, 10rem)", fontWeight: 700, lineHeight: 1, top: "15%", right: "10%" }}>
           {figure.id}
         </div>
       )}
@@ -96,10 +96,10 @@ export default function TangramViewer({ autoPlay = false }: TangramViewerProps) 
       {!autoPlay && (
         <>
           <div className="text-center">
-            <p className="text-sm tracking-[0.2em] uppercase mb-1" style={{ color: colors[1], opacity: 0.5 }}>
+            <p data-typography="subtitle" className="tracking-[0.2em] uppercase mb-1" style={{ fontSize: "var(--size-subtitle)", color: colors[1], opacity: 0.5 }}>
               Figure {figIdx + 1} of {figures.length}
             </p>
-            <p className="text-lg font-semibold" style={{ color: colors[1], fontFamily: "var(--font-title)" }}>
+            <p data-typography="title" className="font-semibold" style={{ fontSize: "var(--size-title)", color: colors[1], fontFamily: "var(--font-title)" }}>
               {figure.name}
             </p>
           </div>

@@ -30,7 +30,7 @@ export default function AdminPage() {
   const copy = TAB_COPY[tab];
 
   return (
-    <>
+    <div data-typography-exempt data-typography-ui>
       <Header />
       <main className="min-h-screen pt-24 pb-16" style={{ backgroundColor: "var(--color-bg)" }}>
         <div className="max-w-7xl mx-auto px-8 md:px-16">
@@ -83,6 +83,6 @@ export default function AdminPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

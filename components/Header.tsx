@@ -123,6 +123,7 @@ export default function Header() {
               <Link
                 key={item.label}
                 href={item.href}
+                data-typography="title"
                 onClick={() => setMenuOpen(false)}
                 className="tracking-[0.15em] transition-all duration-300 hover:opacity-60"
                 style={{

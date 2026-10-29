@@ -22,6 +22,7 @@ const CVCPreview = React.forwardRef<HTMLDivElement, CVCPreviewProps>(
     return (
       <div
         ref={ref}
+        data-typography-exempt
         className="cv-a4"
         style={{
           backgroundColor: "var(--color-bg)",

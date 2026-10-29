@@ -3,23 +3,12 @@
 import FadeIn from "@/components/FadeIn";
 import { useTypography } from "@/context/TypographyContext";
 
-const DEFAULT_TITLE_SIZE = 48;
-const DEFAULT_SUBTITLE_SIZE = 18;
-
 export default function Hero() {
   const { config } = useTypography();
 
-  const titleSize = config.titleSize !== DEFAULT_TITLE_SIZE
-    ? `${config.titleSize}px`
-    : "clamp(4rem, 14vw, 12rem)";
-
-  const yearSize = config.titleSize !== DEFAULT_TITLE_SIZE
-    ? `${Math.round(config.titleSize * 0.7)}px`
-    : "clamp(3rem, 6vw, 5.5rem)";
-
-  const taglineSize = config.subtitleSize !== DEFAULT_SUBTITLE_SIZE
-    ? `${config.subtitleSize}px`
-    : "clamp(1rem, 2vw, 1.6rem)";
+  const titleSize = `${config.titleSize}px`;
+  const yearSize = `${config.titleSize}px`;
+  const taglineSize = `${config.subtitleSize}px`;
 
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -41,7 +30,7 @@ export default function Hero() {
             className="leading-[0.85] tracking-[0.02em] text-white/90 text-center select-none drop-shadow-[0_2px_20px_rgba(0,0,0,0.15)]"
             style={{ fontFamily: "var(--font-title)", fontSize: titleSize }}
           >
-            B<span className="relative inline-block">R<span className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>ILLO &amp; C<span className="relative inline-block">O<span className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>
+            B<span className="relative inline-block">R<span data-typography-exempt className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>ILLO &amp; C<span className="relative inline-block">O<span data-typography-exempt className="absolute -top-[8%] left-1/2 -translate-x-1/2 text-[12%] drop-shadow-none">✦</span></span>
           </h1>
         </FadeIn>
       </div>
@@ -52,7 +41,7 @@ export default function Hero() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-10">
             {/* Left: Collection text */}
             <FadeIn delay={200} className="max-w-md">
-              <p className="tracking-[0.25em] uppercase mb-3 font-medium" style={{ fontSize: "var(--size-paragraph)", fontFamily: "var(--font-body)", color: "var(--color-text)" }}>
+              <p data-typography="subtitle" className="tracking-[0.25em] uppercase mb-3 font-medium" style={{ fontSize: taglineSize, fontFamily: "var(--font-body)", color: "var(--color-text)" }}>
                 Collection
               </p>
               <h2
@@ -78,6 +67,7 @@ export default function Hero() {
             {/* Right: Tagline + category links */}
             <FadeIn delay={400} className="text-right hidden md:block">
               <p
+                data-typography="subtitle"
                 className="leading-snug tracking-wide mb-8"
                 style={{ fontFamily: "var(--font-title)", fontSize: taglineSize, color: "var(--color-text)" }}
               >

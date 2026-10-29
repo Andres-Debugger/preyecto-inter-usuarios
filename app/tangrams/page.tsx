@@ -6,7 +6,7 @@ import TangramConfig from "@/components/TangramConfig";
 
 export default function TangramsPage() {
   return (
-    <>
+    <div data-typography-exempt data-typography-ui>
       <Header />
       <main
         className="min-h-screen pt-24 pb-16"
@@ -26,6 +26,6 @@ export default function TangramsPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

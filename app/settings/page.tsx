@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePalette, Palette, PALETTE_ROLES } from "@/context/PaletteContext";
-import { useTypography } from "@/context/TypographyContext";
+import { useTypography, type TypographyConfig, type TypographyPreset } from "@/context/TypographyContext";
 import { useToast } from "@/components/Toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -46,35 +46,89 @@ const PRESET_PALETTES: { name: string; colors: [string, string, string, string, 
 ];
 
 function TypographyConfigurator({
-  editingId,
-  setEditingId,
+  preset,
+  onDone,
 }: {
-  editingId: string | null;
-  setEditingId: (id: string | null) => void;
+  preset: TypographyPreset | null;
+  onDone: () => void;
 }) {
   const {
     draftConfig,
     hasDraft,
-    updateDraftFont,
-    updateDraftSizes,
+    setDraftConfig,
     applyDraft,
     resetDraft,
     activePreset,
     savePreset,
     updatePreset,
+    setPreviewPreset,
   } = useTypography();
   const { addToast } = useToast();
+  const editorRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const bodyInputRef = useRef<HTMLInputElement>(null);
-  const [titleName, setTitleName] = useState(draftConfig?.titleFontName ?? activePreset.config.titleFontName);
-  const [bodyName, setBodyName] = useState(draftConfig?.bodyFontName ?? activePreset.config.bodyFontName);
+  const initialConfig = preset?.config ?? activePreset.config;
+  const [titleName, setTitleName] = useState(initialConfig.titleFontName);
+  const [bodyName, setBodyName] = useState(initialConfig.bodyFontName);
   const [sizes, setSizes] = useState({
-    title: draftConfig?.titleSize ?? activePreset.config.titleSize,
-    subtitle: draftConfig?.subtitleSize ?? activePreset.config.subtitleSize,
-    paragraph: draftConfig?.paragraphSize ?? activePreset.config.paragraphSize,
+    title: initialConfig.titleSize,
+    subtitle: initialConfig.subtitleSize,
+    paragraph: initialConfig.paragraphSize,
   });
   const [showSave, setShowSave] = useState(false);
   const [presetName, setPresetName] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!preset) return;
+    setPreviewPreset(null);
+    setDraftConfig(preset.config);
+    setTitleName(preset.config.titleFontName);
+    setBodyName(preset.config.bodyFontName);
+    setSizes({
+      title: preset.config.titleSize,
+      subtitle: preset.config.subtitleSize,
+      paragraph: preset.config.paragraphSize,
+    });
+    setError("");
+    const frame = window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [preset, setDraftConfig, setPreviewPreset]);
+
+  useEffect(() => {
+    return () => resetDraft();
+  }, [resetDraft]);
+
+  const currentConfig = (overrides: Partial<TypographyConfig> = {}): TypographyConfig => ({
+    titleFontName: titleName,
+    titleFontData: draftConfig?.titleFontData ?? preset?.config.titleFontData ?? activePreset.config.titleFontData,
+    bodyFontName: bodyName,
+    bodyFontData: draftConfig?.bodyFontData ?? preset?.config.bodyFontData ?? activePreset.config.bodyFontData,
+    titleSize: sizes.title,
+    subtitleSize: sizes.subtitle,
+    paragraphSize: sizes.paragraph,
+    ...overrides,
+  });
+
+  const validateSizes = () => {
+    if (![sizes.title, sizes.subtitle, sizes.paragraph].every((size) => Number.isFinite(size) && size > 0)) {
+      setError("All font sizes must be greater than 0");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
+  const updateSizes = (next: typeof sizes) => {
+    setSizes(next);
+    setDraftConfig(currentConfig({
+      titleSize: next.title,
+      subtitleSize: next.subtitle,
+      paragraphSize: next.paragraph,
+    }));
+  };
 
   const handleFontUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -89,13 +143,14 @@ function TypographyConfigurator({
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
+      const displayName = file.name.replace(/\.ttf$/i, "");
       if (type === "title") {
-        setTitleName(file.name.replace(".ttf", ""));
-        updateDraftFont("title", file.name.replace(".ttf", ""), base64);
+        setTitleName(displayName);
+        setDraftConfig(currentConfig({ titleFontName: displayName, titleFontData: base64 }));
         addToast("Title font loaded successfully", "success");
       } else {
-        setBodyName(file.name.replace(".ttf", ""));
-        updateDraftFont("body", file.name.replace(".ttf", ""), base64);
+        setBodyName(displayName);
+        setDraftConfig(currentConfig({ bodyFontName: displayName, bodyFontData: base64 }));
         addToast("Body font loaded successfully", "success");
       }
     };
@@ -103,56 +158,70 @@ function TypographyConfigurator({
   };
 
   const handleApplyChanges = () => {
-    updateDraftSizes(sizes.title, sizes.subtitle, sizes.paragraph);
+    if (!validateSizes()) return;
+    setDraftConfig(currentConfig());
     applyDraft();
     addToast("Changes applied successfully", "success");
   };
 
   const handleReset = () => {
-    resetDraft();
-    setTitleName(activePreset.config.titleFontName);
-    setBodyName(activePreset.config.bodyFontName);
-    setSizes({
-      title: activePreset.config.titleSize,
-      subtitle: activePreset.config.subtitleSize,
-      paragraph: activePreset.config.paragraphSize,
-    });
+    setError("");
+    if (preset) {
+      resetDraft();
+      setTitleName(preset.config.titleFontName);
+      setBodyName(preset.config.bodyFontName);
+      setSizes({
+        title: preset.config.titleSize,
+        subtitle: preset.config.subtitleSize,
+        paragraph: preset.config.paragraphSize,
+      });
+    } else {
+      resetDraft();
+      setTitleName(activePreset.config.titleFontName);
+      setBodyName(activePreset.config.bodyFontName);
+      setSizes({
+        title: activePreset.config.titleSize,
+        subtitle: activePreset.config.subtitleSize,
+        paragraph: activePreset.config.paragraphSize,
+      });
+    }
     addToast("Changes discarded", "info");
   };
 
+  const handleCancel = () => {
+    resetDraft();
+    setError("");
+    onDone();
+  };
+
   const handleSave = () => {
-    if (!presetName.trim()) return;
-    savePreset(presetName.trim(), {
-      titleFontName: titleName,
-      titleFontData: draftConfig?.titleFontData ?? activePreset.config.titleFontData,
-      bodyFontName: bodyName,
-      bodyFontData: draftConfig?.bodyFontData ?? activePreset.config.bodyFontData,
-      titleSize: sizes.title,
-      subtitleSize: sizes.subtitle,
-      paragraphSize: sizes.paragraph,
-    });
+    if (!presetName.trim()) {
+      setError("Please enter a name for this preset");
+      return;
+    }
+    if (!validateSizes()) return;
+    savePreset(presetName.trim(), currentConfig());
     setPresetName("");
     setShowSave(false);
+    setError("");
     addToast(`Preset "${presetName.trim()}" saved`, "success");
   };
 
   const handleSaveEdits = () => {
-    if (!editingId) return;
-    updatePreset(editingId, activePreset.name, {
-      titleFontName: titleName,
-      titleFontData: draftConfig?.titleFontData ?? activePreset.config.titleFontData,
-      bodyFontName: bodyName,
-      bodyFontData: draftConfig?.bodyFontData ?? activePreset.config.bodyFontData,
-      titleSize: sizes.title,
-      subtitleSize: sizes.subtitle,
-      paragraphSize: sizes.paragraph,
-    });
-    setEditingId(null);
-    addToast(`Preset "${activePreset.name}" updated`, "success");
+    if (!preset) return;
+    if (!validateSizes()) return;
+    updatePreset(preset.id, preset.name, currentConfig());
+    resetDraft();
+    setError("");
+    onDone();
+    addToast(`Preset "${preset.name}" updated`, "success");
   };
 
   return (
-    <div className="bg-[var(--color-surface)] border border-[var(--color-muted)]/20 p-6 md:p-8">
+    <div
+      ref={editorRef}
+      className="bg-[var(--color-surface)] border border-[var(--color-muted)]/20 p-6 md:p-8 scroll-mt-24"
+    >
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div
@@ -175,44 +244,60 @@ function TypographyConfigurator({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {hasDraft && (
+          {preset ? (
             <>
               <button
-                onClick={handleReset}
+                onClick={handleCancel}
                 className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
                 style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
               >
-                Reset
+                Cancel
               </button>
               <button
-                onClick={handleApplyChanges}
+                onClick={handleSaveEdits}
                 className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
                 style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
               >
-                Apply Changes
+                Save Edits
+              </button>
+            </>
+          ) : (
+            <>
+              {hasDraft && (
+                <>
+                  <button
+                    onClick={handleReset}
+                    className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+                    style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={handleApplyChanges}
+                    className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+                    style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+                  >
+                    Apply Changes
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setShowSave(!showSave)}
+                className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
+                style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+              >
+                {showSave ? "Cancel" : "Save as Preset"}
               </button>
             </>
           )}
-          {!editingId && (
-            <button
-              onClick={() => setShowSave(!showSave)}
-              className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
-              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
-            >
-              {showSave ? "Cancel" : "Save as Preset"}
-            </button>
-          )}
-          {editingId && !hasDraft && (
-            <button
-              onClick={handleSaveEdits}
-              className="text-xs tracking-wider uppercase px-4 py-2 border transition-all duration-200 hover:opacity-80"
-              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
-            >
-              Save Edits
-            </button>
-          )}
         </div>
       </div>
+
+      {preset && (
+        <p className="-mt-4 mb-6 text-xs tracking-[0.12em] uppercase" style={{ color: "var(--color-accent)" }}>
+          Editing: {preset.name}
+        </p>
+      )}
 
       {showSave && (
         <div className="mb-8 p-4 border animate-slide-up" style={{ borderColor: "var(--color-accent)", backgroundColor: "color-mix(in srgb, var(--color-accent) 5%, transparent)" }}>
@@ -345,7 +430,7 @@ function TypographyConfigurator({
             <input
               type="number"
               value={sizes.title}
-              onChange={(e) => setSizes({ ...sizes, title: Number(e.target.value) })}
+              onChange={(e) => updateSizes({ ...sizes, title: Number(e.target.value) })}
               className="w-full px-4 py-3 text-sm border bg-transparent outline-none transition-colors duration-200 focus:border-[var(--color-accent)]"
               style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
             />
@@ -358,7 +443,7 @@ function TypographyConfigurator({
             <input
               type="number"
               value={sizes.subtitle}
-              onChange={(e) => setSizes({ ...sizes, subtitle: Number(e.target.value) })}
+              onChange={(e) => updateSizes({ ...sizes, subtitle: Number(e.target.value) })}
               className="w-full px-4 py-3 text-sm border bg-transparent outline-none transition-colors duration-200 focus:border-[var(--color-accent)]"
               style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
             />
@@ -371,13 +456,17 @@ function TypographyConfigurator({
             <input
               type="number"
               value={sizes.paragraph}
-              onChange={(e) => setSizes({ ...sizes, paragraph: Number(e.target.value) })}
+              onChange={(e) => updateSizes({ ...sizes, paragraph: Number(e.target.value) })}
               className="w-full px-4 py-3 text-sm border bg-transparent outline-none transition-colors duration-200 focus:border-[var(--color-accent)]"
               style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
             />
           </div>
         </div>
       </div>
+
+      {error && (
+        <p className="text-red-500 text-xs mb-4">{error}</p>
+      )}
 
       {/* Live preview */}
       <div className="border-t pt-8" style={{ borderColor: "color-mix(in srgb, var(--color-muted) 30%, transparent)" }}>
@@ -389,6 +478,7 @@ function TypographyConfigurator({
           Live Preview
         </p>
         <div
+          data-typography-exempt
           className="p-8 rounded-lg border"
           style={{ backgroundColor: "var(--color-bg)", borderColor: "color-mix(in srgb, var(--color-muted) 20%, transparent)" }}
         >
@@ -404,6 +494,7 @@ function TypographyConfigurator({
             Sample Title
           </h4>
           <p
+            data-typography="subtitle"
             className="mb-3"
             style={{
               fontFamily: (draftConfig?.bodyFontData ?? activePreset.config.bodyFontData) ? "'CustomBody', sans-serif" : "Inter, sans-serif",
@@ -436,7 +527,13 @@ function TypographyConfigurator({
   );
 }
 
-function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
+function TypographyList({
+  onEdit,
+  onCancelEdit,
+}: {
+  onEdit: (id: string) => void;
+  onCancelEdit: () => void;
+}) {
   const { presets, activePreset, activatePreset, deletePreset, searchPresets, previewPreset, setPreviewPreset } = useTypography();
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -451,6 +548,7 @@ function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
   };
 
   const handleActivate = (id: string, name: string) => {
+    onCancelEdit();
     activatePreset(id);
     addToast(`Preset "${name}" activated`, "success");
   };
@@ -466,14 +564,26 @@ function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="pl-8 pr-4 py-2 text-xs border bg-transparent outline-none w-40 transition-colors duration-200 focus:border-[var(--color-accent)]"
+            placeholder="Search by name..."
+            aria-label="Search saved typography presets by name"
+            className="pl-8 pr-8 py-2 text-xs border bg-transparent outline-none w-48 transition-colors duration-200 focus:border-[var(--color-accent)]"
             style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
           />
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "var(--color-muted)" }}>
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear typography search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs leading-none transition-opacity hover:opacity-60"
+              style={{ color: "var(--color-muted)" }}
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
@@ -606,7 +716,7 @@ function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
 
         {filtered.length === 0 && (
           <p className="text-sm py-8 text-center" style={{ color: "var(--color-muted)" }}>
-            No typography presets found. Create one above!
+            {search.trim() ? "No typography presets match your search." : "No typography presets yet. Create one above!"}
           </p>
         )}
       </div>
@@ -1266,30 +1376,39 @@ function LivePreview() {
 }
 
 export default function SettingsPage() {
-  const [, setRefreshKey] = useState(0);
   const [editingTypographyId, setEditingTypographyId] = useState<string | null>(null);
   const [editingPaletteId, setEditingPaletteId] = useState<string | null>(null);
 
   const { presets } = useTypography();
   const { palettes } = usePalette();
 
-  const handleEditTypography = (id: string) => {
-    setEditingTypographyId(id);
-    const preset = presets.find((p) => p.id === id);
-    if (preset) {
-      setRefreshKey((k) => k + 1);
-    }
-  };
+  const editingTypography = editingTypographyId
+    ? presets.find((preset) => preset.id === editingTypographyId) ?? null
+    : null;
 
   const editingPalette = editingPaletteId
     ? palettes.find((palette) => palette.id === editingPaletteId) ?? null
     : null;
 
   useEffect(() => {
+    if (editingTypographyId && !presets.some((preset) => preset.id === editingTypographyId)) {
+      setEditingTypographyId(null);
+    }
+  }, [editingTypographyId, presets]);
+
+  useEffect(() => {
     if (editingPaletteId && !palettes.some((palette) => palette.id === editingPaletteId)) {
       setEditingPaletteId(null);
     }
   }, [editingPaletteId, palettes]);
+
+  const handleEditTypography = (id: string) => {
+    setEditingTypographyId(id);
+  };
+
+  const handleCancelTypographyEdit = () => {
+    setEditingTypographyId(null);
+  };
 
   const handleEditPalette = (id: string) => {
     setEditingPaletteId(id);
@@ -1300,7 +1419,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <>
+    <div data-typography-exempt data-typography-ui>
       <Header />
       <main className="min-h-screen pt-24 pb-16" style={{ backgroundColor: "var(--color-bg)" }}>
         <div className="max-w-7xl mx-auto px-8 md:px-16">
@@ -1320,13 +1439,17 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                   <TypographyConfigurator
-                    editingId={editingTypographyId}
-                    setEditingId={setEditingTypographyId}
+                    key={editingTypography?.id ?? "new"}
+                    preset={editingTypography}
+                    onDone={handleCancelTypographyEdit}
                   />
                 </div>
                 <div className="lg:col-span-1">
                   <div className="sticky top-24">
-                    <TypographyList onEdit={handleEditTypography} />
+                    <TypographyList
+                      onEdit={handleEditTypography}
+                      onCancelEdit={handleCancelTypographyEdit}
+                    />
                   </div>
                 </div>
               </div>
@@ -1369,6 +1492,6 @@ export default function SettingsPage() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
