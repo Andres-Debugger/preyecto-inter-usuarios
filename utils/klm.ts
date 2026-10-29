@@ -40,7 +40,7 @@ export interface KLMStep {
   details: KLMDetail[];
 }
 
-type Device = "mouse" | "keyboard";
+type Device = "away" | "mouse" | "keyboard";
 
 interface DetailInput {
   action: string;
@@ -48,6 +48,8 @@ interface DetailInput {
   device?: Device;
   counts: Partial<KLMCounts>;
 }
+
+const APP_URL = "http://localhost:3000";
 
 const ALEJANDRO_CV = {
   firstName: "Alejandro",
@@ -266,13 +268,23 @@ ALEJANDRO_CV.skills.forEach((skill, index) => {
 });
 
 export const CV_BUILDER_STEPS: KLMStep[] = [
-  makeStep(1, "Ir a Configuración CV", "MENU → Settings → scroll (2)", "mouse", [
-    think("ubicar la sección de CV"),
-    click("MENU"),
-    click("Settings"),
-    wait("la carga de Settings"),
-    scroll("hasta CV Builder", 2),
-  ]),
+  makeStep(
+    1,
+    "Abrir la app y entrar a Configuración CV",
+    `${APP_URL} → MENU → Settings → scroll (2)`,
+    "away",
+    [
+      think("entrar a la aplicación y ubicar la configuración"),
+      click("la barra de direcciones"),
+      typeText("la barra de direcciones", chars(APP_URL)),
+      pressEnter("abrir la URL"),
+      wait("la carga de la página"),
+      click("MENU"),
+      click("Settings"),
+      wait("la carga de Settings"),
+      scroll("hasta CV Builder", 2),
+    ]
+  ),
   makeStep(2, "Configurar foto de perfil", "Upload photo → archivo → Enter", "mouse", [
     think("elegir la foto"),
     click("Upload photo"),

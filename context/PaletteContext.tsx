@@ -16,6 +16,7 @@ interface PaletteContextType {
   previewPalette: Palette | null;
   draftPalette: { colors: [string, string, string, string, string]; mode: "light" | "dark" } | null;
   setPreviewPalette: (p: Palette | null) => void;
+  setDraftPalette: (colors: [string, string, string, string, string], mode: "light" | "dark") => void;
   savePalette: (name: string, colors: [string, string, string, string, string], mode?: "light" | "dark") => void;
   updatePalette: (id: string, name: string, colors: [string, string, string, string, string], mode: "light" | "dark") => void;
   deletePalette: (id: string) => void;
@@ -77,7 +78,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   const [palettes, setPalettes] = useState<Palette[]>([DEFAULT_PALETTE]);
   const [activePalette, setActivePalette] = useState<Palette>(DEFAULT_PALETTE);
   const [previewPalette, setPreviewPalette] = useState<Palette | null>(null);
-  const [draftPalette, setDraftPalette] = useState<{ colors: [string, string, string, string, string]; mode: "light" | "dark" } | null>(null);
+  const [draftPalette, setDraftPaletteState] = useState<{ colors: [string, string, string, string, string]; mode: "light" | "dark" } | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -113,6 +114,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   const updatePalette = useCallback((id: string, name: string, colors: [string, string, string, string, string], mode: "light" | "dark") => {
     setPalettes((prev) => prev.map((p) => (p.id === id ? { ...p, name, colors, mode } : p)));
     setActivePalette((prev) => (prev.id === id ? { ...prev, name, colors, mode } : prev));
+    setPreviewPalette((prev) => (prev?.id === id ? { ...prev, name, colors, mode } : prev));
   }, []);
 
   const deletePalette = useCallback((id: string) => {
@@ -122,6 +124,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
       return next.length > 0 ? next : [DEFAULT_PALETTE];
     });
     setActivePalette((prev) => (prev.id === id ? DEFAULT_PALETTE : prev));
+    setPreviewPalette((prev) => (prev?.id === id ? null : prev));
   }, []);
 
   const activatePalette = useCallback((id: string) => {
@@ -129,7 +132,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
     if (found) {
       setActivePalette(found);
       setPreviewPalette(null);
-      setDraftPalette(null);
+      setDraftPaletteState(null);
     }
   }, [palettes]);
 
@@ -140,21 +143,21 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   }, [palettes]);
 
   const updateDraftColors = useCallback((colors: [string, string, string, string, string]) => {
-    setDraftPalette((prev) => ({
+    setDraftPaletteState((prev) => ({
       colors,
       mode: prev?.mode || activePalette.mode,
     }));
   }, [activePalette.mode]);
 
   const updateDraftMode = useCallback((mode: "light" | "dark") => {
-    setDraftPalette((prev) => ({
+    setDraftPaletteState((prev) => ({
       colors: prev?.colors || activePalette.colors,
       mode,
     }));
   }, [activePalette]);
 
   const applyDraft = useCallback(() => {
-    setDraftPalette((prev) => {
+    setDraftPaletteState((prev) => {
       if (prev) {
         setActivePalette((current) => ({ ...current, colors: prev.colors, mode: prev.mode }));
       }
@@ -163,7 +166,11 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resetDraft = useCallback(() => {
-    setDraftPalette(null);
+    setDraftPaletteState(null);
+  }, []);
+
+  const setDraftPalette = useCallback((colors: [string, string, string, string, string], mode: "light" | "dark") => {
+    setDraftPaletteState({ colors, mode });
   }, []);
 
   if (!loaded) return null;
@@ -176,6 +183,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
         previewPalette,
         draftPalette,
         setPreviewPalette,
+        setDraftPalette,
         savePalette,
         updatePalette,
         deletePalette,

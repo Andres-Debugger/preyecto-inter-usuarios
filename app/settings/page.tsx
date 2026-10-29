@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { usePalette, Palette, PALETTE_ROLES } from "@/context/PaletteContext";
 import { useTypography } from "@/context/TypographyContext";
 import { useToast } from "@/components/Toast";
@@ -23,6 +23,14 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
   surface: "Cards, product images, inputs",
   muted: "Borders, secondary text, subtle elements",
 };
+
+const DEFAULT_PALETTE_COLORS: [string, string, string, string, string] = [
+  "#F5F0E8",
+  "#1C1917",
+  "#B8956A",
+  "#E8E2D8",
+  "#78716C",
+];
 
 const PRESET_PALETTES: { name: string; colors: [string, string, string, string, string]; mode: "light" | "dark" }[] = [
   { name: "Brillo & Co Default", colors: ["#F5F0E8", "#1C1917", "#B8956A", "#E8E2D8", "#78716C"], mode: "light" },
@@ -607,28 +615,53 @@ function TypographyList({ onEdit }: { onEdit: (id: string) => void }) {
 }
 
 function PaletteCreator({
-  editingId,
-  setEditingId,
+  palette,
+  onDone,
 }: {
-  editingId: string | null;
-  setEditingId: (id: string | null) => void;
+  palette: Palette | null;
+  onDone: () => void;
 }) {
   const {
-    draftPalette,
     hasDraft,
-    updateDraftColors,
-    updateDraftMode,
     applyDraft,
     resetDraft,
     savePalette,
     updatePalette,
+    setDraftPalette,
+    setPreviewPalette,
   } = usePalette();
   const { addToast } = useToast();
-  const [name, setName] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [name, setName] = useState(palette?.name ?? "");
+  const [colors, setColors] = useState<[string, string, string, string, string]>(
+    palette?.colors ?? DEFAULT_PALETTE_COLORS
+  );
+  const [mode, setMode] = useState<"light" | "dark">(palette?.mode ?? "light");
   const [error, setError] = useState("");
 
-  const colors = draftPalette?.colors ?? ["#F5F0E8", "#1C1917", "#B8956A", "#E8E2D8", "#78716C"] as [string, string, string, string, string];
-  const mode = draftPalette?.mode ?? "light";
+  useEffect(() => {
+    if (!palette) return;
+    setPreviewPalette(null);
+    setDraftPalette(palette.colors, palette.mode);
+    const frame = window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [palette, setDraftPalette, setPreviewPalette]);
+
+  useEffect(() => {
+    return () => resetDraft();
+  }, [resetDraft]);
+
+  const updateColors = (next: [string, string, string, string, string]) => {
+    setColors(next);
+    setDraftPalette(next, mode);
+  };
+
+  const updateMode = (nextMode: "light" | "dark") => {
+    setMode(nextMode);
+    setDraftPalette(colors, nextMode);
+  };
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -641,20 +674,34 @@ function PaletteCreator({
     }
     savePalette(name.trim(), colors, mode);
     setName("");
+    setColors(DEFAULT_PALETTE_COLORS);
+    setMode("light");
     setError("");
+    resetDraft();
     addToast(`Palette "${name.trim()}" saved`, "success");
   };
 
   const handleSaveEdits = () => {
-    if (!editingId) return;
+    if (!palette) return;
+    if (!name.trim()) {
+      setError("Please enter a name for this palette");
+      return;
+    }
     if (colors.some((c) => !/^#[0-9A-Fa-f]{6}$/.test(c))) {
       setError("All colors must be valid hex codes");
       return;
     }
-    updatePalette(editingId, name || "Untitled Palette", colors, mode);
-    setEditingId(null);
-    setName("");
-    addToast(`Palette "${name || "Untitled Palette"}" updated`, "success");
+    updatePalette(palette.id, name.trim(), colors, mode);
+    setError("");
+    resetDraft();
+    onDone();
+    addToast(`Palette "${name.trim()}" updated`, "success");
+  };
+
+  const handleCancel = () => {
+    resetDraft();
+    setError("");
+    onDone();
   };
 
   const handleApplyChanges = () => {
@@ -663,22 +710,40 @@ function PaletteCreator({
   };
 
   const handleReset = () => {
-    resetDraft();
+    setError("");
+    if (palette) {
+      setColors(palette.colors);
+      setMode(palette.mode);
+      setDraftPalette(palette.colors, palette.mode);
+    } else {
+      setColors(DEFAULT_PALETTE_COLORS);
+      setMode("light");
+      resetDraft();
+    }
     addToast("Changes discarded", "info");
   };
 
   const loadPreset = (preset: typeof PRESET_PALETTES[0]) => {
-    updateDraftColors(preset.colors);
-    updateDraftMode(preset.mode);
+    setColors(preset.colors);
+    setMode(preset.mode);
+    setDraftPalette(preset.colors, preset.mode);
     setName(preset.name);
     addToast(`Preset "${preset.name}" loaded`, "info");
   };
 
   return (
-    <div className="bg-[var(--color-surface)] border border-[var(--color-muted)]/20 p-6 md:p-8">
+    <div
+      ref={editorRef}
+      className="bg-[var(--color-surface)] border border-[var(--color-muted)]/20 p-6 md:p-8 scroll-mt-24"
+    >
       <h3 className="text-lg font-semibold mb-6" style={{ color: "var(--color-text)" }}>
-        {editingId ? "Edit Palette" : "Create New Palette"}
+        {palette ? "Edit Palette" : "Create New Palette"}
       </h3>
+      {palette && (
+        <p className="-mt-4 mb-6 text-xs tracking-[0.12em] uppercase" style={{ color: "var(--color-accent)" }}>
+          Editing: {palette.name}
+        </p>
+      )}
 
       {/* Preset palettes */}
       <div className="mb-8">
@@ -729,7 +794,7 @@ function PaletteCreator({
         </label>
         <div className="flex gap-3">
           <button
-            onClick={() => updateDraftMode("light")}
+            onClick={() => updateMode("light")}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm border-2 transition-all duration-200"
             style={{
               borderColor: mode === "light" ? "var(--color-accent)" : "var(--color-muted)",
@@ -751,7 +816,7 @@ function PaletteCreator({
             Light Mode
           </button>
           <button
-            onClick={() => updateDraftMode("dark")}
+            onClick={() => updateMode("dark")}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm border-2 transition-all duration-200"
             style={{
               borderColor: mode === "dark" ? "var(--color-accent)" : "var(--color-muted)",
@@ -793,7 +858,7 @@ function PaletteCreator({
                   onChange={(e) => {
                     const next = [...colors] as [string, string, string, string, string];
                     next[i] = e.target.value;
-                    updateDraftColors(next);
+                    updateColors(next);
                   }}
                   className="w-16 h-16 cursor-pointer border-2 border-black/10 rounded-lg"
                 />
@@ -804,7 +869,7 @@ function PaletteCreator({
                 onChange={(e) => {
                   const next = [...colors] as [string, string, string, string, string];
                   next[i] = e.target.value;
-                  updateDraftColors(next);
+                  updateColors(next);
                 }}
                 className="w-24 text-center text-[11px] font-mono px-2 py-1 border bg-transparent outline-none"
                 style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
@@ -819,46 +884,56 @@ function PaletteCreator({
       )}
 
       <div className="flex items-center gap-3">
-        {hasDraft && (
+        {palette ? (
           <>
             <button
-              onClick={handleReset}
+              onClick={handleCancel}
               className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
               style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
             >
-              Reset
+              Cancel
             </button>
-            <button
-              onClick={handleApplyChanges}
-              className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
-              style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
-            >
-              Apply Changes
+            <button onClick={handleSaveEdits} className="btn-primary">
+              Save Edits
             </button>
           </>
-        )}
-        {!editingId && (
-          <button
-            onClick={handleSave}
-            className="btn-primary"
-          >
-            Save Palette
-          </button>
-        )}
-        {editingId && !hasDraft && (
-          <button
-            onClick={handleSaveEdits}
-            className="btn-primary"
-          >
-            Save Edits
-          </button>
+        ) : (
+          <>
+            {hasDraft && (
+              <>
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
+                  style={{ borderColor: "var(--color-muted)", color: "var(--color-muted)" }}
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleApplyChanges}
+                  className="px-6 py-3 text-xs tracking-wider uppercase border transition-all duration-200 hover:opacity-80"
+                  style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}
+                >
+                  Apply Changes
+                </button>
+              </>
+            )}
+            <button onClick={handleSave} className="btn-primary">
+              Save Palette
+            </button>
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function PaletteList({ onEdit }: { onEdit: (id: string) => void }) {
+function PaletteList({
+  onEdit,
+  onCancelEdit,
+}: {
+  onEdit: (id: string) => void;
+  onCancelEdit: () => void;
+}) {
   const { palettes, activePalette, activatePalette, deletePalette, searchPalettes, previewPalette, setPreviewPalette } = usePalette();
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -873,6 +948,7 @@ function PaletteList({ onEdit }: { onEdit: (id: string) => void }) {
   };
 
   const handleActivate = (id: string, name: string) => {
+    onCancelEdit();
     activatePalette(id);
     addToast(`Palette "${name}" activated`, "success");
   };
@@ -888,14 +964,26 @@ function PaletteList({ onEdit }: { onEdit: (id: string) => void }) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="pl-8 pr-4 py-2 text-xs border bg-transparent outline-none w-40 transition-colors duration-200 focus:border-[var(--color-accent)]"
+            placeholder="Search by name..."
+            aria-label="Search saved palettes by name"
+            className="pl-8 pr-8 py-2 text-xs border bg-transparent outline-none w-48 transition-colors duration-200 focus:border-[var(--color-accent)]"
             style={{ borderColor: "var(--color-muted)", color: "var(--color-text)" }}
           />
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "var(--color-muted)" }}>
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear palette search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs leading-none transition-opacity hover:opacity-60"
+              style={{ color: "var(--color-muted)" }}
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
@@ -1023,7 +1111,7 @@ function PaletteList({ onEdit }: { onEdit: (id: string) => void }) {
 
         {filtered.length === 0 && (
           <p className="text-sm py-8 text-center" style={{ color: "var(--color-muted)" }}>
-            No palettes found. Create one above!
+            {search.trim() ? "No palettes match your search." : "No palettes yet. Create one above!"}
           </p>
         )}
       </div>
@@ -1193,12 +1281,22 @@ export default function SettingsPage() {
     }
   };
 
+  const editingPalette = editingPaletteId
+    ? palettes.find((palette) => palette.id === editingPaletteId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (editingPaletteId && !palettes.some((palette) => palette.id === editingPaletteId)) {
+      setEditingPaletteId(null);
+    }
+  }, [editingPaletteId, palettes]);
+
   const handleEditPalette = (id: string) => {
     setEditingPaletteId(id);
-    const palette = palettes.find((p) => p.id === id);
-    if (palette) {
-      setRefreshKey((k) => k + 1);
-    }
+  };
+
+  const handleCancelPaletteEdit = () => {
+    setEditingPaletteId(null);
   };
 
   return (
@@ -1242,10 +1340,14 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                   <PaletteCreator
-                    editingId={editingPaletteId}
-                    setEditingId={setEditingPaletteId}
+                    key={editingPalette?.id ?? "new"}
+                    palette={editingPalette}
+                    onDone={handleCancelPaletteEdit}
                   />
-                  <PaletteList onEdit={handleEditPalette} />
+                  <PaletteList
+                    onEdit={handleEditPalette}
+                    onCancelEdit={handleCancelPaletteEdit}
+                  />
                 </div>
 
                 <div className="lg:col-span-1">
